@@ -1,0 +1,30 @@
+baseURL: 'http://donaldh.wtf/'
+languageCode: en-uk
+title: donaldh.wtf
+theme: beautifulhugo
+params:
+  subtitle: Playing at life
+  highlight: true
+  useHLJS: true
+  rss: true
+  topmenu: categories
+permalinks:
+  post: '/:year/:month/:slug/'
+author:
+  name: Donald Hunter
+  github: donaldh
+  twitter: donaldhunter
+  stackoverflow: 'users/386025'
+  instagram: donaldihunter
+  flickr: sealgair
+menu:
+  main:
+    - name: About
+      url: about/
+      weight: 3
+    - name: Tags
+      url: tags
+      weight: 1
+    - name: Categories
+      url: categories
+      weight: 1

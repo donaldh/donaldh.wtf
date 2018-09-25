@@ -1,0 +1,113 @@
+---
+title: "Golfing Faster FASTA"
+date: 2018-09-04T20:45:00+01:00
+tags:
+  - perl6
+categories:
+  - code
+---
+
+After reading Timotimo's excellent [[https://wakelift.de/2018/08/31/faster-fasta-please/][Faster FASTA Please]] blog post, I wanted to test some of the
+available performance tradeoffs.
+
+# more
+
+** IO.slurp.lines
+
+This is my baseline which incorporates Timotimo's performance improvements to the original solution, somewhat simplified.
+
+#+BEGIN_SRC perl6 :results output
+  my %seqs;
+  my $s = '';
+  my $id;
+  for 'genome.fa'.IO.slurp(:enc<latin1>).lines -> $line {
+      if $line.starts-with('>') {
+          if $id {
+              %seqs{$id} = $s;
+              $id = Nil;
+          }
+          $id = $line.substr(1);
+          $s = '';
+      } else {
+          $s ~= $line;
+      }
+  }
+  if $id {
+      %seqs{$id} = $s;
+  }
+  say "Took { now - BEGIN now } seconds";
+#+END_SRC
+
+#+RESULTS:
+: Took 3.58698513 seconds
+
+** IO.lines
+
+What if we avoid using slurp? Hopefully ~IO.lines~ will manage to be faster.
+
+#+BEGIN_SRC perl6 :results output
+  my %seqs;
+  my $s = '';
+  my $id;
+  for 'genome.fa'.IO.lines(:enc<latin1>) -> $line {
+      if $line.starts-with('>') {
+          if $id {
+              %seqs{$id} = $s;
+              $id = Nil;
+          }
+          $id = $line.substr(1);
+          $s = '';
+      } else {
+          $s ~= $line;
+      }
+  }
+  if $id {
+      %seqs{$id} = $s;
+  }
+  say "Took { now - BEGIN now } seconds";
+#+END_SRC
+
+#+RESULTS:
+: Took 4.71259838 seconds
+
+After a few runs, it seems to average out at being just a bit slower than slurping the file
+before iterating. But it has the advantage of avoiding the memory required for the whole file
+and should scale better for much larger files.
+
+** Split and Skip
+
+This is my baseline for the second implementation in Timotimo's post.
+
+#+BEGIN_SRC perl6 :results output
+  my %seqs = slurp('genome.fa', :enc<latin1>).split('>').skip(1).map: {
+      .head => .skip(1).join given .split("\n").cache;
+  }
+  say "Took { now - BEGIN now } seconds";
+#+END_SRC
+
+#+RESULTS:
+: Took 7.4847424 seconds
+
+** Racing Split and Skip
+
+#+BEGIN_SRC perl6 :results output
+  my %seqs = slurp('genome.fa', :enc<latin1>).split('>').skip(1).race.map: {
+      .head => .skip(1).join given .split("\n").cache;
+  }
+  say "Took { now - BEGIN now } seconds";
+#+END_SRC
+
+#+RESULTS:
+: 4.2423127
+
+** Hyper Split and Skip
+
+#+BEGIN_SRC perl6 :results output
+  my %seqs = slurp('genome.fa', :enc<latin1>).split('>').skip(1).hyper.map: {
+      .head => .skip(1).join given .split("\n").cache;
+  }
+  say "Took { now - BEGIN now } seconds";
+#+END_SRC
+
+#+RESULTS:
+: Took 5.2303269 seconds

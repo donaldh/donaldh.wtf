@@ -1,0 +1,162 @@
+---
+title: "Blogging With Hugo and Org Babel"
+date: 2018-09-12T22:30:00+01:00
+tags:
+  - literate
+  - org
+  - perl6
+categories:
+  - code
+---
+
+I think I have finally found a blogging platform that makes me happy. It needs to fit my
+programmer's workflow – git, markup and blogging about code. Hugo with org-babel nails it.
+
+# more
+
+Hugo is a really nice open-source static site generator - [[https://gohugo.io/]]. It supports a
+variety of markup formats including the ubiquitous markdown, but also Emacs Org Mode files. This
+opens the way to using org-babel for blogging with inline code snippets that can be
+evaluated. Hello literate blogging! And did I mention polyglot?
+
+** How Easy?
+
+#+BEGIN_SRC sh
+# create a new site
+hugo new site donaldh.wtf
+
+# add a theme
+
+# create a new post
+hugo new post/how-easy-is-it.org
+
+# edit away
+
+# try it locally
+hugo serve -D
+# open http://localhost:1313/
+
+# publish
+hugo && rsync -avz --delete public/ <destination>
+#+END_SRC
+
+** Tour Of Inlines
+
+*** Shell
+#+BEGIN_SRC sh
+echo "Hello from shell!"
+#+END_SRC
+
+#+RESULTS:
+: Hello from shell!
+
+*** Inline C
+#+BEGIN_SRC C
+printf("Hello worldies!\n");
+#+END_SRC
+
+#+RESULTS:
+: Hello worldies!
+
+*** Perl
+#+BEGIN_SRC perl :results output
+print "Hello World\n";
+#+END_SRC
+
+#+RESULTS:
+: Hello World
+
+*** Sqlite
+#+BEGIN_SRC sqlite :db users.db
+select * from users;
+#+END_SRC
+
+#+RESULTS:
+| Donald Hunter | donaldh | http://donaldh.wtf/ |
+
+*** Introducing Perl 6
+
+#+name: p6ver
+#+BEGIN_SRC perl6
+$*PERL
+#+END_SRC
+And the version is:
+#+RESULTS: p6ver
+: Perl 6 (6.c)
+
+I cannot remember the provenance of this ob-perl6 language driver. I think I found it on github
+but it has since disappeared. You can get it from my dotfiles here:
+
+[[https://github.com/donaldh/dotfiles/blob/master/emacs/emacs.d.symlink/local/ob-perl6.el]]
+
+
+How do you like your fibonacci:
+#+BEGIN_SRC perl6
+(1, 1, * + * ... *)[^10].join: ', '
+#+END_SRC
+
+#+RESULTS:
+: 1, 1, 2, 3, 5, 8, 13, 21, 34, 55
+
+*** Graphs With Dot
+#+BEGIN_SRC dot :file test-dot.png :exports results
+digraph {
+  a -> b
+  a -> c
+}
+#+END_SRC
+
+#+RESULTS:
+[[file:test-dot.png]]
+
+** Bugs
+
+Hugo uses [[https://github.com/chaseadamsio/goorgeous]] for parsing Org-mode files and it turns out
+there are a few bugs. They look relatively simple to fix so I'll delve into that soon.
+
+Update: Of course, now that the bugs are resolved, the static site generator made everything
+below look fine.
+
+*** Comment
+
+#+BEGIN_SRC
+ #+BEGIN_COMMENT
+ Nobody expects any commentary.
+ #+END_COMMENT
+#+END_SRC
+This generates spurious ~<p>~ tags inside a ~<pre>~ block, and syntax highlighting happens:
+#+BEGIN_COMMENT
+Nobody expects any commentary.
+#+END_COMMENT
+When, in fact, comments should be ignored.
+
+*** Quote
+#+BEGIN_SRC org
+ #+BEGIN_QUOTE
+#+END_SRC
+This also adds ~<p>~ tags, this time inside a ~<blockquote>~, instead of ~<br/>~
+#+BEGIN_QUOTE
+Mary had a little lamb,
+Its fleece was white as snow
+Everywhere that Mary went,
+The lamb was sure to go
+#+END_QUOTE
+
+*** Centered Text
+#+BEGIN_SRC org
+ #+BEGIN_CENTER
+#+END_SRC
+Same thing happening here:
+
+#+BEGIN_CENTER
+Hello centered world!
+Why such spacing though?
+#+END_CENTER
+
+*** Verse
+#+BEGIN_VERSE
+Mary had a little lamb,
+Its fleece was white as snow
+Everywhere that Mary went,
+The lamb was sure to go
+#+END_VERSE

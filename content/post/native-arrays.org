@@ -1,0 +1,35 @@
+---
+title: "Perl 6 Native Arrays"
+date: 2018-09-11T20:00:51+01:00
+draft: true
+tags:
+  - perl6
+---
+
+Exploring native array behaviour and performance.
+
+# more
+
+*Perl6*
+#+BEGIN_SRC perl6 :results output
+my int @arr[10;10];
+say @arr;
+#+END_SRC
+
+#+RESULTS:
+: [[0 0 0 0 0 0 0 0 0 0] [0 0 0 0 0 0 0 0 0 0] [0 0 0 0 0 0 0 0 0 0] [0 0 0 0 0 0 0 0 0 0] [0 0 0 0 0 0 0 0 0 0] [0 0 0 0 0 0 0 0 0 0] [0 0 0 0 0 0 0 0 0 0] [0 0 0 0 0 0 0 0 0 0] [0 0 0 0 0 0 0 0 0 0] [0 0 0 0 0 0 0 0 0 0]]
+
+*Python*
+#+BEGIN_SRC python :results output
+  import numpy
+  print numpy.zeros((100,100), dtype=int)
+#+END_SRC
+
+#+RESULTS:
+: [[0 0 0 ... 0 0 0]
+:  [0 0 0 ... 0 0 0]
+:  [0 0 0 ... 0 0 0]
+:  ...
+:  [0 0 0 ... 0 0 0]
+:  [0 0 0 ... 0 0 0]
+:  [0 0 0 ... 0 0 0]]
