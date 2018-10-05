@@ -2,6 +2,7 @@ baseURL: 'http://donaldh.wtf/'
 languageCode: en-uk
 title: donaldh.wtf
 theme: beautifulhugo
+disqusShortname: donaldh-wtf
 params:
   subtitle: Playing at life
   highlight: true

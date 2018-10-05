@@ -7,6 +7,7 @@ tags:
   - perl6
 categories:
   - code
+comments: true
 ---
 
 I think I have finally found a blogging platform that makes me happy. It needs to fit my
