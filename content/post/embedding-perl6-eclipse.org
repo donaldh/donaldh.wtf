@@ -1,0 +1,82 @@
+---
+title: "Embedding Perl6 in Eclipse"
+date: 2014-07-26T19:02:02+01:00
+tags:
+  - perl6
+categories:
+  - code
+---
+
+[Coke] asked me a simple question on irc:
+
+#+BEGIN_QUOTE
+donaldh: have you any idea how to bundle perl6 in a jar we could invoke from eclipse?
+#+END_QUOTE
+
+This tickled my urge to explore embedding Rakudo / JVM, to refresh my knowledge of Eclipse and
+also to have some fun hacking with Perl 6.
+
+# more
+
+It turns out that embedding the Rakudo runtime in an Eclipse plugin was fairly
+straightforward. The two challenges were:
+
+- Getting module loading to work
+- Fixing class loading issues
+
+** Fixing Module Loading
+
+This was the biggest challenge. Both nqp and rakudo rely on the Java classpath for bootstrapping
+themselves with essential infrastructure such as the ModuleLoader and
+CORE.setting. Unfortunately an eclipse bundle has a single jar in the classpath so an
+alternative approach needs to be used. I've long wanted to decouple module loading from the
+classpath anyway so this provided the ideal opportunity to prototype an approach.
+
+At the moment I have just faked it by extending nqp::jvmclasspath to return an extended
+classpath that includes
+
+- ~perl6.prefix/languages/nqp/lib~
+- ~perl6.prefix/languages/perl6/lib~
+- ~perl6.prefix/languages/perl6/runtime~
+
+~perl6.prefix~ is derived from the Eclipse bundle location and the complete rakudo installation
+is actually embedded inside the bundle.
+
+The real solution will be to completely separate the module search path from the java
+classpath. I think we could use the module-path from nqp, perhaps with a Java system property as
+an alternative setting mechanism. It will need to support a list of paths for bootstrap time and
+should be derivable from perl6.prefix when that is all that has been set.
+
+** Fixing Class Loading Issues
+
+This turned out to be simpler that I was expecting. When you have multiple class loaders and you
+have OSGi package imports and exports, then you expect to have a hard time resolving class
+loading issues. But, with the rakudo runtime jars already added to the Bundle-ClassPath, the
+only remaining issue was that classes loaded by one ClassLoader could not find classes loaded by
+other ClassLoaders. The simple fix was to modify LibraryLoader and ByteClassLoader to use the
+bundle classloader as their parent so they can delegate to it.
+
+** Trying It Out
+
+If you want to try this out, you first need to build and install nqp on the jvm backend, using
+the classloading branch, then build and install rakudo.
+
+Then:
+
+#+BEGIN_EXAMPLE
+$ git clone git@github.com:donaldh/perl6-eclipse-plugin.git
+$ git clone git@github.com:donaldh/perl6-editor.git
+$ cp -r `perl6 -e "say $*VM.prefix"` perl6-eclipse-plugin
+#+END_EXAMPLE
+
+You can now:
+
+- Import these two plugin projects into Eclipse
+- Build the plugins
+- Launch a debug Eclipse that contains these two plugins
+
+* Next Steps
+
+- Improve eval performance by retaining a global context and compilation unit.
+- Use the Perl 6 grammar and resulting ast for syntax highlighting.
+- Explore embedding Perl 6 into the EPIC Editor
