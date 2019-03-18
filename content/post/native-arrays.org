@@ -10,7 +10,10 @@ Exploring native array behaviour and performance.
 
 # more
 
-*Perl6*
+*** Perl6
+
+The Perl 6 syntax for shaped arrays is really rather nice.
+
 #+BEGIN_SRC perl6 :results output
 my int @arr[10;10];
 say @arr;
@@ -19,10 +22,37 @@ say @arr;
 #+RESULTS:
 : [[0 0 0 0 0 0 0 0 0 0] [0 0 0 0 0 0 0 0 0 0] [0 0 0 0 0 0 0 0 0 0] [0 0 0 0 0 0 0 0 0 0] [0 0 0 0 0 0 0 0 0 0] [0 0 0 0 0 0 0 0 0 0] [0 0 0 0 0 0 0 0 0 0] [0 0 0 0 0 0 0 0 0 0] [0 0 0 0 0 0 0 0 0 0] [0 0 0 0 0 0 0 0 0 0]]
 
-*Python*
+The default behaviour for printing shaped arrays – not so much.
+
+*** Python
+
+By comparison, Numpy in Python does a better default job of printing shaped arrays.
+
 #+BEGIN_SRC python :results output
   import numpy
-  print numpy.zeros((100,100), dtype=int)
+  print numpy.zeros((10,10), dtype=int)
+#+END_SRC
+
+#+RESULTS:
+#+BEGIN_EXAMPLE
+[[0 0 0 0 0 0 0 0 0 0]
+ [0 0 0 0 0 0 0 0 0 0]
+ [0 0 0 0 0 0 0 0 0 0]
+ [0 0 0 0 0 0 0 0 0 0]
+ [0 0 0 0 0 0 0 0 0 0]
+ [0 0 0 0 0 0 0 0 0 0]
+ [0 0 0 0 0 0 0 0 0 0]
+ [0 0 0 0 0 0 0 0 0 0]
+ [0 0 0 0 0 0 0 0 0 0]
+ [0 0 0 0 0 0 0 0 0 0]]
+#+END_EXAMPLE
+
+Numpy also handles big shaped arrays well by printing an elided summary of the array. Don't
+bother trying this in Perl 6.
+
+#+BEGIN_SRC python :results output
+  import numpy
+  print numpy.zeros((1000,1000), dtype=int)
 #+END_SRC
 
 #+RESULTS:
@@ -33,3 +63,30 @@ say @arr;
 :  [0 0 0 ... 0 0 0]
 :  [0 0 0 ... 0 0 0]
 :  [0 0 0 ... 0 0 0]]
+
+*** Some Performance Measurements
+
+#+BEGIN_SRC perl6 :results output
+my int @arr[1000;1000];
+say "Initialization took $(now - ENTER now) seconds";
+{
+   my $str = @arr.gist;
+   say "Stringification took $(now - ENTER now) seconds";
+   say "String is {$str.chars} chars long";
+   say ?($str ~~ /\n/);
+}
+#+END_SRC
+
+#+RESULTS:
+: Initialization took 0.00951239 seconds
+: Stringification took 9.15976749 seconds
+: String is 2002001 chars long
+: False
+
+It's inevitable that stringification of the whole array is going to be slow. It's also a fair
+assumption that the current implementation has room for improvement. Printing a 2 million
+character string with no newlines is no help to anyone though.
+
+*** Native Array Access
+
+This year's [[https://adventofcode.com/2018/day/3][AoC day 3]] problem provided a nice test-case for measuring native array performance.
