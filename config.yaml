@@ -4,7 +4,7 @@ title: donaldh.wtf
 theme: beautifulhugo
 disqusShortname: donaldh-wtf
 params:
-  subtitle: Playing at life
+  subtitle: Hacks and Misadventures
   highlight: true
   useHLJS: true
   rss: true
