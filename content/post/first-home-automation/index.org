@@ -1,0 +1,176 @@
+---
+title: "First Home Automation"
+date: 2019-03-10T11:30:00
+tags:
+  - iot
+  - automation
+categories:
+  - home
+comments: true
+---
+Home automation on a budget, with a bit of DIY.
+# more
+
+I have thought about home automation for a while but I'm really not happy with solutions that
+require a cloud server. The alternative is a hub based solution which pushes the price up
+considerably. I haven't had a use-case that is compelling enough for any significant spend so I
+just haven't bothered until now.
+
+Inspired by this post [[https://znanev.github.io/Hyleton-313-Smart-Plug/]] I decided to purchase a
+couple of Hyleton 313 plugs off Amazon for ~£10 each to see if I could build a budget solution.
+
+[[file:hyleton.jpg]]
+
+There is a custom firmware available for ESP8266 based devices that can be used with the
+Hyleton 313. It provides MQTT and HTTP interfaces so it is easy to integrate into a custom
+environment: [[https://github.com/arendst/Sonoff-Tasmota]]
+
+I have an Apple TV and an iPhone so it makes sense for me to use the Apple TV as my
+homehub. Someone has already written a HomeKit agent with a wide range of plugins, including an
+MQTT plugin that meets my needs: [[https://github.com/nfarina/homebridge]]
+
+The final thing needed to join all this together is an MQTT broker. Eclipse Mosquitto is a
+popular choice in the IoT community; it's also available from Homebrew which makes things easy:
+[[https://mosquitto.org/]]
+
+** Building the Firmware
+
+Following znanev's advice, I built my own firmware with the LAN settings preconfigured. This
+required the platformio toolchain which I installed from Homebrew.
+
+#+BEGIN_SRC sh
+brew install platformio
+#+END_SRC
+
+The firmware project is available on Github.
+
+#+BEGIN_SRC sh
+git clone https://github.com/arendst/Sonoff-Tasmota.git
+cd Sonoff-Tasmota
+#+END_SRC
+
+I customised ~sonoff/user_config.h~ to define my network settings and to comment out all the
+modules that I don't need for the Hyleton 313.
+
+The build is automated by platformio, with the settings in ~platformio.ini~
+
+#+BEGIN_SRC sh
+platformio run
+#+END_SRC
+
+This produces a firmware image in ~.pioenvs/sonoff/firmware.bin~.
+
+** Flashing the Plug
+
+This step turned out to be the hardest – splitting the plug apart. I used a hairdryer and pry
+tools but found it extremely difficult to get the case open. The casing looked pretty butchered
+by the time I was finished. I maybe need to invest in a heat gun.
+
+A small amount of solder work is required to attach fly leads from a USB-to-serial adapter to
+the ESP8266 on the plug. Then I used esptool.py to save the old firmware and upload the custom
+firmware.
+
+#+BEGIN_SRC sh
+esptool.py --port /dev/tty.SLAB_USBtoUART read_flash 0x0 0x100000 saved-flash.bin
+
+esptool.py --port /dev/tty.SLAB_USBtoUART erase_flash
+
+esptool.py --port /dev/tty.SLAB_USBtoUART write_flash -fs 1MB -fm dout 0x0 \
+    .pioenvs/sonoff/firmware.bin
+#+END_SRC
+
+** The MQTT Broker
+
+As I mentioned, the Eclipse Mosquitto broker is available from Homebrew. The default config is
+good enough to get started with.
+
+#+BEGIN_SRC sh
+brew install mosquitto
+brew services start mosquitto
+#+END_SRC
+
+** Connecting
+
+When the Hyleton plug is powered on, it runs an HTTP server where you can customize its
+settings. I had preconfigured the settings for MQTT so it automatically connected to my
+mosquitto server. I named the device ~hall-light~ for my intended use.
+
+#+BEGIN_SRC sh
+% mosquitto_sub -v -t '#'
+tele/hall-light/LWT Online
+#+END_SRC
+
+It's simple to test the plug by publishing messages to the mosquitto broker.
+
+#+BEGIN_SRC sh
+mosquitto_pub -t cmnd/hall-light/power -m 1  # turn on
+mosquitto_pub -t cmnd/hall-light/power -m 0  # turn off
+#+END_SRC
+
+
+** Installing Homebridge
+
+Homebridge is a NodeJS server which is easy to install using ~npm~. The plugins can be found
+there too.
+
+#+BEGIN_SRC sh
+npm install -g homebridge
+npm install -g homebridge-mqttthing
+#+END_SRC
+
+** Configuring Homebridge
+
+Homebridge has a config file in ~~/.homebridge/config.json~ where you define the accessories
+that are to be published as HomeKit devices.
+
+#+BEGIN_SRC json
+    "accessories" : [
+        {
+            "accessory": "mqttthing",
+            "type": "switch",
+            "name": "Hall Light",
+            "url": "http://<mosquitto-host>:1883",
+            "onValue": "ON",
+            "offValue": "OFF",
+            "topics":
+            {
+                "getOn": "stat/hall-light/POWER",
+                "setOn": "cmnd/hall-light/power"
+            }
+        }
+    ]
+#+END_SRC
+
+With Homebridge configured, it will now manage the Hyleton switch as an accessory that is
+connected to the bridge.
+
+#+BEGIN_SRC sh
+% homebridge
+[2019-2-27 23:06:53] Loaded config.json with 1 accessories and 0 platforms.
+[2019-2-27 23:06:53] ---
+[2019-2-27 23:06:53] Loaded plugin: homebridge-info
+[2019-2-27 23:06:53] Registering platform 'homebridge-info.Info'
+[2019-2-27 23:06:53] ---
+[2019-2-27 23:06:53] Loaded plugin: homebridge-mqttthing
+[2019-2-27 23:06:53] Registering accessory 'homebridge-mqttthing.mqttthing'
+[2019-2-27 23:06:53] ---
+[2019-2-27 23:06:53] Loaded plugin: homebridge-statefuldummy
+[2019-2-27 23:06:53] Registering accessory 'homebridge-statefuldummy.StatefulDummySwitch'
+[2019-2-27 23:06:53] ---
+[2019-2-27 23:06:53] Loading 0 platforms...
+[2019-2-27 23:06:53] Loading 1 accessories...
+[2019-2-27 23:06:53] [Hall Light] Initializing mqttthing accessory...
+#+END_SRC
+
+** Home
+
+With everything running, the only thing left is to pair the accessory with the Home app, using
+the identity published by Homebridge when it was started.
+
+[[file:hallway.jpg]]
+
+I have configured a couple of simple automation rules to control my hall light. It was a
+pleasant surprise that HomeKit can use adaptive triggers such as *15 minutes before sunset*.
+
+[[file:automation.jpg]]
+
