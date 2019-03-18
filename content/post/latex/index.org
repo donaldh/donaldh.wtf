@@ -1,0 +1,46 @@
+---
+title: "LaTeX in Org Mode"
+date: 2018-12-31T17:00:00
+draft: true
+tags:
+  - org
+---
+Messing around with tikz in org mode.
+
+# more
+
+** Inline tikZ in LaTeX
+
+#+HEADER: :file tree.png :imagemagick yes
+#+HEADER: :results output silent :headers '("\\usepackage{tikz}")
+#+HEADER: :fit yes :imoutoptions -geometry 300x300 :iminoptions -density 400
+#+BEGIN_SRC latex :exports none
+  \usetikzlibrary{trees}
+  \begin{tikzpicture}
+    \node [circle, draw, fill=red!20] at (0,0) {1}
+    child { node [circle, draw, fill=blue!30] {2}
+      child { node [circle, draw, fill=green!30] {3} }
+      child { node [circle, draw, fill=yellow!30] {4} }};
+  \end{tikzpicture}
+#+END_SRC
+
+[[file:tree.png]]
+
+** TikZ in R
+
+#+name: test_plot
+#+BEGIN_SRC R :session :exports code :results output latex
+  tikz(console=TRUE, width=4, height=4)
+  plot(rnorm(100), rnorm(100))
+  dummy <- dev.off()
+#+END_SRC
+
+#+name: test_plot_png
+#+header: :imagemagick yes :iminoptions -density 600 :imoutoptions -geometry 500
+#+header: :fit yes :noweb yes :headers '("\\usepackage{tikz}")
+#+BEGIN_SRC latex :exports none :file test.png :results none
+  <<test_plot()>>
+#+END_SRC
+
+[[file:test.png]]
+
