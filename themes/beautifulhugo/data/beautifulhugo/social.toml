@@ -129,3 +129,9 @@ id = "telegram"
 url = "https://telegram.me/%s"
 title = "Telegram"
 icon = "fa-telegram"
+
+[[social_icons]]
+id = "flickr"
+url = "https://www.flickr.com/people/%s"
+title = "Flickr"
+icon = "fa-flickr"
