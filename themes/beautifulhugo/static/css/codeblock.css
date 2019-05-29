@@ -1,9 +1,11 @@
 /* --- Code blocks --- */
 
-.chroma .ln { 
-  margin-right: 0.8em; 
-  padding: 0 0.4em 0 0.4em; 
+.chroma .ln {
+  margin-right: 0.8em;
+  padding: 0 0.4em 0 0.4em;
 }
-pre code.hljs {
-  padding: 9.5px;
+
+pre {
+    padding: 0;
+    margin: 1em 0 1em 0;
 }
