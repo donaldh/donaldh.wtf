@@ -3,11 +3,11 @@
 {{ $data := .Data }}
 
 <div class="container" role="main">
-  <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1"> 
+  <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
     <article class="post-preview">
       <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
         {{ range $key, $value := .Data.Terms.ByCount }}
-          <div class="panel panel-default">
+          <div>
             <a class="collapsed" role="button" data-toggle="collapse" data-target="#collapse{{ $value.Name }}" data-parent="#accordion"
                href="#" aria-expanded="false" aria-controls="collapse{{ $value.Name }}">
                 <div class="panel-heading" role="tab" id="header{{ $value.Name }}">
@@ -34,6 +34,5 @@
     </article>
   </div>
 </div>
-
 
 {{ end }}
