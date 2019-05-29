@@ -413,12 +413,6 @@ footer .theme-by {
   float: right;
 }
 
-@media only screen and (min-width: 768px) {
-  .post-preview .post-title {
-    font-size: 36px;
-  }
-}
-
 /* --- Tags --- */
 
 .blog-tags {
