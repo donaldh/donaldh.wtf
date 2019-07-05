@@ -1,0 +1,106 @@
+---
+title: "The Vigenère Cipher"
+date: 2019-07-04T16:48:31+01:00
+tags:
+  - perl6
+categories:
+  - code
+comments: true
+---
+
+This is a solution to task #2 from the [[https://perlweeklychallenge.org/blog/perl-weekly-challenge-015/][15th Perl Weekly Challenge]], written in Perl 6.
+
+# more
+
+#+BEGIN_QUOTE
+Write a script to implement Vigenère cipher. The script should be able encode and decode.
+#+END_QUOTE
+
+The [[https://en.wikipedia.org/wiki/Vigen%C3%A8re_cipher][Vigenère Cipher]] is a method of encryption that uses a series of Caesar ciphers chosen using
+the lettes of a repeating key.
+
+Two solution approaches spring to mind:
+
+- Use a Vigenère square as a lookup table
+- Compute the rotations directly
+
+I have chosen to compute the rotations directly. The encode and decode operations can be
+implemented with exactly the same algorithm, with the only difference being whether to add or
+subtract the key offset.
+
+As an aside, here is a one-liner to construct a Vigenère square:
+
+#+BEGIN_SRC perl6
+my @vigenère-square[26;26] = gather { -> $n { take ('A'..'Z').List.rotate($n) } for 0..25 };
+#+END_SRC
+
+Here is my solution in full:
+
+#+BEGIN_SRC perl6
+#!/usr/bin/env perl6
+
+enum Operation <encode decode>;
+
+#| Apply the Vigenère Cipher to text from STDIN, using the provided key.
+sub MAIN(
+    Operation $operation, #= encode or decode
+    Str $key)             #= Key to use
+{
+    my @key-values = $key.uc.comb(/<[A..Z]>/).map(*.ord - 'A'.ord);
+
+    slurp.uc.comb(/<[A..Z]>/).map(*.ord - 'A'.ord)
+    .map(-> $n {
+                LEAVE @key-values .= rotate(1);
+                given $operation {
+                    when encode {
+                        ($n + @key-values[0]) % 26;
+                    }
+                    when decode {
+                        ($n + 26 - @key-values[0]) % 26;
+                    }
+                }
+            })
+    .map(* + 'A'.ord).rotor(60, :partial).map(*.chrs.join.say);
+}
+#+END_SRC
+
+The encode/decode transforms are performed in ~0..25~ number space.
+The input data is normalized to uppercase and only the letters ~A..Z~ are processed. The
+solution ignores all other characters both in the source text and the key.
+
+I have also added ~POD~ comments to the ~MAIN~ sub and to its parameters. This produces some
+nice friendly command-line usage. It is worth noting that source layout matters when using ~POD~
+comments to generate usage. The parameter comments need to be attached to the parameters so each
+parameter is on its own line.
+
+#+BEGIN_SRC sh
+% ./Vigenère.p6
+Usage:
+  ./Vigenère.p6 <operation> <key> -- Apply the Vigenère Cipher to text from STDIN, using the provided key.
+
+    <operation>    encode or decode
+    <key>          key string to use
+#+END_SRC
+
+Here is the example from the [[https://en.wikipedia.org/wiki/Vigen%C3%A8re_cipher][Wikipedia page]]:
+
+#+BEGIN_SRC sh
+% echo 'ATTACKATDAWN' | ./Vigenère.p6 encode 'LEMON'
+LXFOPVEFRNHR
+% echo 'Attack at dawn!' | ./Vigenère.p6 encode 'lemon'
+LXFOPVEFRNHR
+% echo 'LXFOPVEFRNHR' | ./Vigenère.p6 decode 'Lemon'
+ATTACKATDAWN
+#+END_SRC
+
+Here is an example with a longer source text:
+
+#+BEGIN_SRC sh
+% fortune | ./Vigenère.p6 encode fortune
+XKVKPRQJHYXJNXMHFFSSMCSUIOETTGVBMYENRNBNUMWCEKUVPXKYXLRSSAPL
+IHPNGXKIBZJRKHLHRTJVKOAWTIEWYQKTFXXMGLWCLZBGLJFZYFRHMSRKNFSK
+AFNHGENBJNHQIWHFKLRRYGSXXFYSSIKCAKQMZKOFLHOGMUVRFVRUGBFDRZVE
+#+END_SRC
+
+As an added bonus, the solution uses ~.rotor~ to wrap the output text to 60 columns, regardless
+of the input format.
