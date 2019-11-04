@@ -3,6 +3,7 @@ title: "Golfing Faster FASTA"
 date: 2018-09-04T20:45:00+01:00
 tags:
   - perl6
+  - raku
 categories:
   - code
 ---

@@ -5,6 +5,7 @@ tags:
   - literate
   - org
   - perl6
+  - raku
 categories:
   - code
 comments: true

@@ -3,6 +3,7 @@ title: "Van Eck by'eck"
 date: 2019-06-24T22:13:53+01:00
 tags:
   - perl6
+  - raku
 categories:
   - code
 comments: true

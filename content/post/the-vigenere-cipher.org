@@ -3,6 +3,7 @@ title: "The Vigenère Cipher"
 date: 2019-07-04T16:48:31+01:00
 tags:
   - perl6
+  - raku
 categories:
   - code
 comments: true

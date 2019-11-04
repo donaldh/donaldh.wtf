@@ -3,6 +3,7 @@ title: "Embedding Perl6 in Eclipse"
 date: 2014-07-26T19:02:02+01:00
 tags:
   - perl6
+  - raku
 categories:
   - code
 ---
