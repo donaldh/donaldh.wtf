@@ -1,0 +1,103 @@
+---
+title: "Stones and Jewels"
+date: 2019-09-18T23:26:22+01:00
+tags:
+  - perl6
+  - raku
+  - weekly
+categories:
+  - code
+comments: true
+---
+
+This is a solution to task #1 from the 26th Perl Weekly Challenge, written in Perl 6.
+
+# more
+
+#+BEGIN_QUOTE
+Create a script that accepts two strings, let us call it, “stones” and “jewels”. It should print
+the count of “alphabet” from the string “stones” found in the string “jewels”. For example, if
+your stones is “chancellor” and “jewels” is “chocolate”, then the script should print “8”. To
+keep it simple, only A-Z,a-z characters are acceptable. Also make the comparison case sensitive.
+#+END_QUOTE
+
+The problem can be solved with a one-liner:
+
+#+NAME: oneliner
+#+BEGIN_SRC perl6 :results value code
+[+] 'chancellor'.comb.Bag{'chocolate'.comb(/<[A..Z a..z]>/).Bag.keys}
+#+END_SRC
+
+returns:
+
+#+RESULTS: oneliner
+#+BEGIN_SRC perl6
+8
+#+END_SRC
+
+Let's break that up a bit and describe the details:
+
+#+NAME: expanded
+#+BEGIN_SRC perl6
+[+]                            # reduce to the sum of values
+  'chancellor'
+    .comb                      # Literally 'comb' out the characters
+    .Bag                       # into a bag counting the characters
+                               #   Bag(a, c(2), e, h, l(2), n, o, r)
+   {                           # Take a slice of the stones bag
+     'chocolate'
+       .comb(/<[A..Z a..z]>/)  # 'comb' out the accepted characters from jewels
+       .Bag                    # into a bag
+       .keys                   # giving a set of unique characters
+                               #   (o a t l e h c)
+   }                           # Slice returns the count of stone characters
+                               #   for each jewel character (2 0 1 1 1 2 1)
+#+END_SRC
+
+Note that there's no need to filter the stones for valid characters since we only pick jewels
+which are already known to be valid.
+
+To complete the task, we need to turn the one-liner into a usable script.
+
+#+NAME: script
+#+BEGIN_SRC perl6
+#!/usr/bin/env perl6
+
+sub MAIN(Str $stones, Str $jewels) {
+    my $found = [+] $stones.comb.Bag{ $jewels.comb(/<[A..Z a..z]>/).Bag.keys };
+    say "There are {$found} jewels to be found";
+}
+#+END_SRC
+
+For example:
+
+#+NAME: usage
+#+BEGIN_SRC sh :results output code
+./stones-and-jewels.p6
+#+END_SRC
+
+#+RESULTS: usage
+#+BEGIN_SRC sh
+Usage:
+  ./stones-and-jewels.p6 <stones> <jewels>
+#+END_SRC
+
+#+NAME: run1
+#+BEGIN_SRC sh :results value code
+./stones-and-jewels.p6 chancellor chocolate
+#+END_SRC
+
+#+RESULTS: run1
+#+BEGIN_SRC sh
+There are 8 jewels to be found
+#+END_SRC
+
+#+NAME: run2
+#+BEGIN_SRC sh :results value code
+./stones-and-jewels.p6 'Chancellor Bing' 'chocolate boy'
+#+END_SRC
+
+#+RESULTS: run2
+#+BEGIN_SRC sh
+There are 7 jewels to be found
+#+END_SRC
