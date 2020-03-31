@@ -1,0 +1,54 @@
+---
+title: "A Childhood at Sea"
+date: 2020-03-30T17:14:07+01:00
+tags:
+  - nostalgia
+categories:
+  - life
+comments: false
+---
+
+Most of my youth was spent at sea, sailing and dinghy racing from [[https://www.cramondboatclub.org.uk/][Cramond Boat Club]].
+
+# more
+
+Here's a selection of photos taken across the years of me out on the water one way or another.
+
+*** Caoneing
+
+Getting some time on the river in a Sea Scout kayak:
+
+[[file:donald_canoe.jpeg]]
+
+*** Low Tide
+
+Here I am standing on a couple of *lifting buoys* waiting for the tide to come in:
+
+[[file:donald_buoys.jpeg]]
+
+*** Motoring
+
+Our family yacht – a modest little [[http://www.hurleyownersassociation.co.uk/pages/h20.htm][Hurley 20]], with Mirror dinghy in tow. Oxcars Lighthouse is in
+the background:
+
+[[file:donald_teal.jpeg]]
+
+*** At the Helm
+
+Making the most of a breeze at the helm of the club wayfarer:
+
+[[file:donald_wayfarer.jpeg]]
+
+*** Getting Wet
+
+Capsize drill with my big sister, in the River Almond:
+
+[[file:donald_capsize.jpeg]]
+
+*** Dinghy Racing
+
+Out on the water, waiting for the start of a race, with Phil in his 420:
+
+[[file:donald_phil_420.jpeg]]
+
+
