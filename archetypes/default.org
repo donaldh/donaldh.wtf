@@ -1,0 +1,16 @@
+---
+title: "{{ replace .Name "-" " " | title }}"
+date: {{ .Date }}
+tags:
+  - draft
+categories:
+  - draft
+draft: true
+comments: true
+---
+
+# summary text
+
+# more
+
+# content
