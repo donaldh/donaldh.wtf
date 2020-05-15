@@ -25,15 +25,15 @@ Two solution approaches spring to mind:
 - Use a Vigenère square as a lookup table
 - Compute the rotations directly
 
-I have chosen to compute the rotations directly. The encode and decode operations can be
-implemented with exactly the same algorithm, with the only difference being whether to add or
-subtract the key offset.
+I have chosen to compute the rotations directly. As an aside, here is a one-liner to construct a
+Vigenère square:
 
-As an aside, here is a one-liner to construct a Vigenère square:
-
-#+BEGIN_SRC perl6
-my @vigenère-square[26;26] = gather { -> $n { take ('A'..'Z').List.rotate($n) } for 0..25 };
+#+BEGIN_SRC perl6 :results output
+my @vigenère-square[26;26] = (^26).map: -> $n { ('A'..'Z').List.rotate($n) }
 #+END_SRC
+
+The encode and decode operations can be implemented with exactly the same algorithm, with the
+only difference being whether to add or subtract the key offset.
 
 Here is my solution in full:
 
