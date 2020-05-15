@@ -11,14 +11,14 @@ comments: true
 
 This is a solution to task #2 from the [[https://perlweeklychallenge.org/blog/perl-weekly-challenge-015/][15th Perl Weekly Challenge]], written in Perl 6.
 
-# more
+<!--more-->
 
 #+BEGIN_QUOTE
 Write a script to implement Vigenère cipher. The script should be able encode and decode.
 #+END_QUOTE
 
 The [[https://en.wikipedia.org/wiki/Vigen%C3%A8re_cipher][Vigenère Cipher]] is a method of encryption that uses a series of Caesar ciphers chosen using
-the lettes of a repeating key.
+the letters of a repeating key.
 
 Two solution approaches spring to mind:
 

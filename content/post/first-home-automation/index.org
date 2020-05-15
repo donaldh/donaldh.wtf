@@ -9,7 +9,7 @@ categories:
 comments: true
 ---
 Home automation on a budget, with a bit of DIY.
-# more
+<!--more-->
 
 I have thought about home automation for a while but I'm really not happy with solutions that
 require a cloud server. The alternative is a hub based solution which pushes the price up

@@ -17,7 +17,7 @@ donaldh: have you any idea how to bundle perl6 in a jar we could invoke from ecl
 This tickled my urge to explore embedding Rakudo / JVM, to refresh my knowledge of Eclipse and
 also to have some fun hacking with Perl 6.
 
-# more
+<!--more-->
 
 It turns out that embedding the Rakudo runtime in an Eclipse plugin was fairly
 straightforward. The two challenges were:

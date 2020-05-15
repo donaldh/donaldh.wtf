@@ -11,7 +11,7 @@ comments: true
 
 My first shot at the [[https://perlweeklychallenge.org/][Perl Weekly Challenge]] with a Roman numeral encoder in Perl 6.
 
-# more
+<!--more-->
 
 I have been watching the [[https://perlweeklychallenge.org/][Perl Weekly Challenge]] with interest since it was first announced, but
 without the time to actually participate. [[https://perlweeklychallenge.org/blog/perl-weekly-challenge-010/][This week]] there are three challenges, the first of

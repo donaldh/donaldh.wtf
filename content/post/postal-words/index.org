@@ -10,7 +10,7 @@ comments: true
 ---
 This is a solution to challenge #2 from the [[https://perlweeklychallenge.org/blog/perl-weekly-challenge-014/][14th Perl Weekly Challenge]].
 
-# more
+<!--more-->
 
 #+BEGIN_QUOTE
 Using only the official postal (2-letter) abbreviations for the 50 U.S. states, write a script

@@ -7,7 +7,7 @@ tags:
 ---
 Messing around with tikz in org mode.
 
-# more
+<!--more-->
 
 ** Inline tikZ in LaTeX
 

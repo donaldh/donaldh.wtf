@@ -12,7 +12,7 @@ comments: true
 
 This is a solution to task #1 from the 26th Perl Weekly Challenge, written in Perl 6.
 
-# more
+<!--more-->
 
 #+BEGIN_QUOTE
 Create a script that accepts two strings, let us call it, “stones” and “jewels”. It should print

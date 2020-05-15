@@ -5,12 +5,13 @@ tags:
   - nostalgia
 categories:
   - life
+  - photography
 comments: false
 ---
 
 Most of my youth was spent at sea, sailing and dinghy racing from [[https://www.cramondboatclub.org.uk/][Cramond Boat Club]].
 
-# more
+<!--more-->
 
 Here's a selection of photos taken across the years of me out on the water one way or another.
 

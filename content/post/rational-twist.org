@@ -11,7 +11,7 @@ categories:
 As a followup to brrt's [[http://brrt-to-the-future.blogspot.com/2018/08/a-curious-benchmark.html][Curious Benchmark]] post, I wanted to explore some of the questions that
 were left unanswered.
 
-# more
+<!--more-->
 
 ** A Reminder
 

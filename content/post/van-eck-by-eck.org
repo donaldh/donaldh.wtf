@@ -11,7 +11,7 @@ comments: true
 
 This is a solution to challenge #1 from the [[https://perlweeklychallenge.org/blog/perl-weekly-challenge-014/][14th Perl Weekly Challenge]].
 
-# more
+<!--more-->
 
 #+BEGIN_QUOTE
 Write a script to generate Van Eck’s sequence starts with 0.

@@ -14,7 +14,7 @@ comments: true
 I think I have finally found a blogging platform that makes me happy. It needs to fit my
 programmer's workflow – git, markup and blogging about code. Hugo with org-babel nails it.
 
-# more
+<!--more-->
 
 Hugo is a really nice open-source static site generator - [[https://gohugo.io/]]. It supports a
 variety of markup formats including the ubiquitous markdown, but also Emacs Org Mode files. This

@@ -10,7 +10,7 @@ tags:
 
 What's going on here then? Chance pictures from an iPhone without any apparent skill at all.
 
-# more
+<!--more-->
 
 * Pano
 

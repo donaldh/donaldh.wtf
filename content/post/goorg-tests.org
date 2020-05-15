@@ -12,7 +12,7 @@ tags:
 
 Have you ever wanted to parse org content with Go? Well now you can!
 
-# more
+<!--more-->
 
 It doesn't matter if you want to use /an emphasis/, *bold*, =verbatim=, ~code~ or +strikethrough+, they're all supported!
 

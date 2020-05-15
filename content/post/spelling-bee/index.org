@@ -11,7 +11,7 @@ comments: true
 
 A solver for the NYT daily *Spelling Bee*, written in Raku /(nee Perl 6)/.
 
-# more
+<!--more-->
 
 A spelling be is a hex grid of characters that are to be used to produce words.  The goal is to
 get the highest score possible by finding words, with longer words giving better scores.

@@ -11,7 +11,7 @@ categories:
 After reading Timotimo's excellent [[https://wakelift.de/2018/08/31/faster-fasta-please/][Faster FASTA Please]] blog post, I wanted to test some of the
 available performance tradeoffs.
 
-# more
+<!--more-->
 
 ** IO.slurp.lines
 

@@ -11,7 +11,7 @@ categories:
 
 Exploring native array behaviour and performance.
 
-# more
+<!--more-->
 
 *** Perl6
 
