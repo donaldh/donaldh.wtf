@@ -721,3 +721,9 @@ input.gsc-input, .gsc-input-box, .gsc-input-box-hover, .gsc-input-box-focus, .gs
   box-sizing: content-box;
   line-height: normal;
 }
+
+figcaption {
+    text-align: center;
+    padding: 0.5em;
+    color: #808080;
+}
