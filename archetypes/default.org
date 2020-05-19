@@ -11,6 +11,6 @@ comments: true
 
 # summary text
 
-# more
+<!--more-->
 
 # content
