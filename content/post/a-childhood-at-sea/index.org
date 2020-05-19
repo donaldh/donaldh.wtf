@@ -15,40 +15,51 @@ Most of my youth was spent at sea, sailing and dinghy racing from [[https://www.
 
 Here's a selection of photos taken across the years of me out on the water one way or another.
 
-*** Caoneing
+#+BEGIN_EXPORT html
+<h2 align=center>Canoeing</h2>
+#+END_EXPORT
 
-Getting some time on the river in a Sea Scout kayak:
-
+#+CAPTION: Getting some time on the river in a Sea Scout kayak.
 [[file:donald_canoe.jpeg]]
 
-*** Low Tide
+#+BEGIN_EXPORT html
+<h2 align=center>Low Tide</h2>
+#+END_EXPORT
 
-Here I am standing on a couple of *lifting buoys* waiting for the tide to come in:
+#+CAPTION: Here I am standing on a couple of *lifting buoys* waiting for the tide to come in.
 
 [[file:donald_buoys.jpeg]]
 
-*** Motoring
+#+BEGIN_EXPORT html
+<h2 align=center>Motoring</h2>
+#+END_EXPORT
 
-Our family yacht – a modest little [[http://www.hurleyownersassociation.co.uk/pages/h20.htm][Hurley 20]], with Mirror dinghy in tow. Oxcars Lighthouse is in
-the background:
+#+CAPTION: Our family yacht – a modest little [[http://www.hurleyownersassociation.co.uk/pages/h20.htm][Hurley 20]],
+#+CAPTION: with Mirror dinghy in tow.  Oxcars Lighthouse is in the background.
 
 [[file:donald_teal.jpeg]]
 
-*** At the Helm
+#+BEGIN_EXPORT html
+<h2 align=center>At the Helm</h2>
+#+END_EXPORT
 
-Making the most of a breeze at the helm of the club wayfarer:
+#+CAPTION: Making the most of a breeze at the helm of the club wayfarer.
 
 [[file:donald_wayfarer.jpeg]]
 
-*** Getting Wet
+#+BEGIN_EXPORT html
+<h2 align=center>Getting Wet</h2>
+#+END_EXPORT
 
-Capsize drill with my big sister, in the River Almond:
+#+CAPTION: Capsize drill with my big sister, in the River Almond.
 
 [[file:donald_capsize.jpeg]]
 
-*** Dinghy Racing
+#+BEGIN_EXPORT html
+<h2 align=center>Dinghy Racing</h2>
+#+END_EXPORT
 
-Out on the water, waiting for the start of a race, with Phil in his 420:
+#+CAPTION: Out on the water, waiting for the start of a race, with Phil in his 420.
 
 [[file:donald_phil_420.jpeg]]
 
