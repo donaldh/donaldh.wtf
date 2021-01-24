@@ -147,129 +147,171 @@ These are the scoring rules for the game:
 - Longer words earn a point for each letter
 - Pangram words that use all letters earn 7 extra points.
 
-#+BEGIN_SRC perl6 :results output
+#+BEGIN_SRC raku :results output :tangle bee.raku :shebang "#!/usr/bin/env raku"
   my @words = '/usr/share/dict/words'.IO.lines>>.lc;
 
-  my $centre = 't';
-  my @allowed = <m c i p l o t>;
+  sub MAIN(Str $chars, Str $centre, :$summary) {
+      my @allowed = $chars.comb;
 
-  my $final-score = 0;
-  my $bonus-words = 0;
+      my $final-score = 0;
+      my $found-words = 0;
+      my $bonus-words = 0;
 
-  for @words -> $word {
-      my @chars = $word.comb;
-      if +@chars >= 4 &&             # Is at least 4 chars
-         $centre (elem) @chars &&    # Contains the center char (element of set)
-         @chars (<) @allowed {       # All chars are allowed (is a subset)
+      for @words -> $word {
+          my @chars = $word.comb;
+          if +@chars >= 4 &&          # Is at least 4 chars
+          $centre (elem) @chars &&    # Contains the center char (element of set)
+          @chars (<=) @allowed {      # All chars are allowed (is a subset)
 
-         my $word-score = +@chars == 4 ?? 1 !! +@chars;
-         my @remainder = @allowed (-) @chars;
-         $word-score += 7 && $bonus-words++ if +@remainder == 0;
+              my $word-score = +@chars == 4 ?? 1 !! +@chars;
+              my $remainder = @allowed (-) @chars;
+              unless +$remainder {
+                  $word-score += 7;
+                  $bonus-words++;
+              }
 
-         $final-score += $word-score;
+              $final-score += $word-score;
+              $found-words += 1;
 
-         sprintf("%15s = %2d    unused %s", $word, $word-score, @remainder).say;
+              my $info = +$remainder ?? "unused {$remainder.keys}" !! 'pangram';
+              sprintf("%15s = %2d    %s", $word, $word-score, $info).say unless $summary;
+          }
       }
-  }
 
-  say '';
-  say "This spelling bee gets {$final-score} points, with {$bonus-words} bonus words.";
+      say '';
+      say "Found {$found-words} words from candidate characters {$chars.subst($centre, "[$centre]")}.";
+      say "This spelling bee gets {$final-score} points, with {$bonus-words} bonus words.";
+  }
 #+END_SRC
 
+#+begin_src sh :results output
+./bee.raku mciplot t
+#+end_src
+
 #+RESULTS:
-#+BEGIN_EXAMPLE
+#+begin_example
           clipt =  5    unused m o
-           clit =  1    unused m o p
+           clit =  1    unused o p m
           cloit =  5    unused p m
-          cloot =  5    unused m i p
-           clot =  1    unused p i m
-        colitic =  7    unused m p
-           colt =  1    unused m i p
-           colt =  1    unused m i p
-         commit =  6    unused p l
+          cloot =  5    unused i m p
+           clot =  1    unused p m i
+        colitic =  7    unused p m
+           colt =  1    unused i m p
+           colt =  1    unused p i m
+         commit =  6    unused l p
          commot =  6    unused i l p
         complot =  7    unused i
-           coot =  1    unused i m p l
+           coot =  1    unused m i l p
         copilot =  7    unused m
            copt =  1    unused i m l
-         coptic =  6    unused l m
-           coto =  1    unused p l i m
-          ictic =  5    unused p l o m
-        illicit =  7    unused o p m
-           ilot =  1    unused m c p
-          immit =  5    unused p o l c
+         coptic =  6    unused m l
+           coto =  1    unused l p m i
+          ictic =  5    unused l o m p
+        illicit =  7    unused m p o
+           ilot =  1    unused c p m
+          immit =  5    unused o l p c
        implicit =  8    unused o
+      impolitic = 16    pangram
           impot =  5    unused l c
-           itmo =  1    unused l p c
-          licit =  5    unused m o p
-           lilt =  1    unused p o c m
-          limit =  5    unused p o c
-           loot =  1    unused m c i p
-          lotic =  5    unused p m
-          lotto =  5    unused c i m p
+           itmo =  1    unused l c p
+          licit =  5    unused o m p
+           lilt =  1    unused c o p m
+          limit =  5    unused p c o
+           loot =  1    unused c i p m
+          lotic =  5    unused m p
+          lotto =  5    unused m c i p
      miliolitic = 10    unused p
-           milt =  1    unused c o p
+           milt =  1    unused p c o
         mitotic =  7    unused l p
-           mitt =  1    unused c p o l
-           moit =  1    unused c l p
-           molt =  1    unused p i c
-           moot =  1    unused i c l p
-         motmot =  6    unused p l i c
+           mitt =  1    unused l c p o
+           moit =  1    unused l p c
+           molt =  1    unused i p c
+           moot =  1    unused l p i c
+         motmot =  6    unused i c p l
            mott =  1    unused c i p l
-           mott =  1    unused i c p l
-          motto =  5    unused p l c i
-   occipitootic = 12    unused l m
-       ocotillo =  8    unused p m
+           mott =  1    unused p c l i
+          motto =  5    unused l i p c
+   occipitootic = 12    unused m l
+       ocotillo =  8    unused m p
           octic =  5    unused l p m
-         octoic =  6    unused p l m
-         octopi =  6    unused m l
+         octoic =  6    unused p m l
+         octopi =  6    unused l m
            omit =  1    unused c l p
         oolitic =  7    unused m p
-          optic =  5    unused l m
-           otic =  1    unused l p m
-         otitic =  6    unused m l p
-       otolitic =  8    unused m p
-          otomi =  5    unused p l c
-           otto =  1    unused i c m p l
-           otto =  1    unused m c i l p
-          picot =  5    unused l m
-           pict =  1    unused m o l
-           pict =  1    unused m o l
+          optic =  5    unused m l
+           otic =  1    unused l m p
+         otitic =  6    unused m p l
+       otolitic =  8    unused p m
+          otomi =  5    unused l p c
+           otto =  1    unused m i l p c
+           otto =  1    unused p l c i m
+          picot =  5    unused m l
+           pict =  1    unused l m o
+           pict =  1    unused l o m
           pilot =  5    unused c m
           pilot =  5    unused c m
-          pipit =  5    unused c m l o
-         pitpit =  6    unused c m l o
-           plot =  1    unused m c i
+          pipit =  5    unused m l o c
+         pitpit =  6    unused o l m c
+           plot =  1    unused c m i
         politic =  7    unused m
        politico =  8    unused m
-           polt =  1    unused c i m
-           poot =  1    unused m c i l
+           polt =  1    unused c m i
+           poot =  1    unused i m l c
           potoo =  5    unused l m i c
-           pott =  1    unused l m i c
-          potto =  5    unused i c m l
-         ptotic =  6    unused m l
-           till =  1    unused p o c m
-         tillot =  6    unused c m p
-           tilt =  1    unused m c o p
-           timo =  1    unused c l p
-         tipiti =  6    unused m c o l
+           pott =  1    unused l i m c
+          potto =  5    unused i l m c
+         ptotic =  6    unused l m
+           till =  1    unused o m c p
+         tillot =  6    unused c p m
+           tilt =  1    unused c p o m
+           timo =  1    unused p l c
+         tipiti =  6    unused l m o c
         tiptilt =  7    unused o m c
-         tiptop =  6    unused l m c
-           titi =  1    unused m c l o p
-           toco =  1    unused i m p l
-           toil =  1    unused m c p
-           toit =  1    unused c m p l
-           toll =  1    unused i c m p
-           tolt =  1    unused m c i p
-         tomtit =  6    unused p l c
-           tool =  1    unused c i m p
-           toom =  1    unused p l i c
+         tiptop =  6    unused m l c
+           titi =  1    unused m p l o c
+           toco =  1    unused i m l p
+           toil =  1    unused p m c
+           toit =  1    unused m p l c
+           toll =  1    unused m p i c
+           tolt =  1    unused c p m i
+         tomtit =  6    unused c l p
+           tool =  1    unused p m c i
+           toom =  1    unused c p l i
            toop =  1    unused c i m l
-           toot =  1    unused m i c l p
+           toot =  1    unused m c p l i
            topi =  1    unused l c m
           topic =  5    unused m l
            topo =  1    unused i c m l
-           toto =  1    unused m c i l p
+           toto =  1    unused m p c i l
 
-This spelling bee gets 337 points, with 0 bonus words.
-#+END_EXAMPLE
+Found 93 words from candidate characters mciplo[t].
+This spelling bee gets 353 points, with 1 bonus words.
+#+end_example
+
+#+begin_src sh :results output
+./bee.raku --summary rdighlo r
+#+end_src
+
+#+RESULTS:
+: 
+: Found 53 words from candidate characters [r]dighlo.
+: This spelling bee gets 158 points, with 1 bonus words.
+
+#+begin_src sh :results output
+./bee.raku --summary yomahnr m
+#+end_src
+
+#+RESULTS:
+: 
+: Found 168 words from candidate characters yo[m]ahnr.
+: This spelling bee gets 687 points, with 1 bonus words.
+
+#+begin_src sh :results output
+./bee.raku --summary hunotgd u
+#+end_src
+
+#+RESULTS:
+: 
+: Found 72 words from candidate characters h[u]notgd.
+: This spelling bee gets 308 points, with 2 bonus words.
+
