@@ -7,7 +7,7 @@ A *veteran* software engineer working in the telecom industry. Involved with a v
 
 * https://www.onap.org/
 * https://www.opendaylight.org
-* [Perl 6](http://perl6.org/) fanboy
+* [Raku (nee Perl 6)](https://raku.org/) fanboy
 * http://pnda.io
 
 Active member of MEF, contributing to MEF Implementation Projects.
