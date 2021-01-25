@@ -18,11 +18,15 @@ This first picture was taken in a relative hurry. Son was itching to drop into t
 just grabbed my phone and took a quick /pano/. The results, the lighting, the mood, are much
 better than I expected to get.
 
-<a data-flickr-embed="true"
-href="https://www.flickr.com/photos/sealgair/39449555645/in/dateposted-public/"
-title="Roche de Mio"><img src="https://farm5.staticflickr.com/4749/39449555645_4623bfb350_k.jpg" width="2048"
-height="788" alt="Roche de Mio"></a>
-<script async src="//embedr.flickr.com/assets/client-code.js" charset="utf-8"></script>
+# <a data-flickr-embed="true"
+# href="https://www.flickr.com/photos/sealgair/39449555645/in/dateposted-public/"
+# title="Roche de Mio"><img src="
+
+[[https://farm5.staticflickr.com/4749/39449555645_4623bfb350_k.jpg]]
+
+# " width="2048"
+# height="788" alt="Roche de Mio"></a>
+# <script async src="//embedr.flickr.com/assets/client-code.js" charset="utf-8"></script>
 
 * Almost Tilt-shift
 
@@ -30,8 +34,12 @@ This is even more surprising. We're on a chairlift and I'm twisted round in my s
 camera is popped onto /square/ and I'm hoping that I can hold it steady *and* keep the picture
 in frame. The result is my favourite of the winter. It has an amazing tilt-shift feel to it.
 
-<a data-flickr-embed="true"
-href="https://www.flickr.com/photos/sealgair/40301434822/in/dateposted-public/"
-title="Plagne Bellecote"><img src="https://farm5.staticflickr.com/4608/40301434822_d98cda6d51_h.jpg"
-width="1600" height="1600" alt="Plagne Bellecote"></a><script async
-src="//embedr.flickr.com/assets/client-code.js" charset="utf-8"></script>
+# <a data-flickr-embed="true"
+# href="https://www.flickr.com/photos/sealgair/40301434822/in/dateposted-public/"
+# title="Plagne Bellecote"><img src="
+
+[[https://farm5.staticflickr.com/4608/40301434822_d98cda6d51_h.jpg]]
+
+# "
+# width="1600" height="1600" alt="Plagne Bellecote"></a><script async
+# src="//embedr.flickr.com/assets/client-code.js" charset="utf-8"></script>
