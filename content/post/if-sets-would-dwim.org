@@ -127,5 +127,8 @@ my Str @a = <a b c d e> (-) <a b d> ;
 :   in block <unit> at EVAL_0 line 5
 :   in block <unit> at -e line 1
 
+That's a clear example where adding type information helps the Raku compiler to help me from
+introducing this kind of bug.
+
 I hope this generates a discussion about this and other cases where our intuition and Raku's
 behaviour don't quite line up.
