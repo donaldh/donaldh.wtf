@@ -1,0 +1,131 @@
+---
+title: "If Sets Would DWIM"
+date: 2021-01-26T17:26:19Z
+tags:
+  - raku
+categories:
+  - code
+comments: true
+---
+
+Whenever I work with Sets in Raku they often fail to DWIM. This is a short exploration to see if
+DWIMminess can be improved.
+
+<!--more-->
+
+I recently revisited a script I wrote a while ago that made use of the ~(-)~ Set difference
+operator. The code had a bug lurking there in plain sight because the following code doesn't do
+what my intuition wants.
+
+#+begin_src raku :results output
+  my @allowed = <m c i p l o t>;
+  my @chars = 'impolitic'.comb;
+
+  my @remainder = @allowed (-) @chars;
+
+  if +@remainder == 0 {
+     say 'pangram';
+  } else {
+     say "unused: [{@remainder.join(' ')}]";
+  }
+#+end_src
+
+#+RESULTS:
+: unused: []
+
+The cause of the bug is that ~(-)~ produces a Set and assignment to ~@remainder~ creates an
+Array of 1 item. Always. But inconvenently, when it is an empty set, it stringifies to an empty
+string which just helps to cover for the lurking bug.
+
+#+begin_src raku :results output
+my @items = <a b c d e> (-) <a b c d e>;
+say @items.raku;
+say +@items;
+#+end_src
+
+#+RESULTS:
+: [Set.new()]
+: 1
+
+The fix is relatively simple. Just don't assign to an array. Use a scalar container instead.
+
+#+begin_src raku :results output
+my $items = <a b c d e> (-) <a b d>;
+say $items.raku;
+say +$items;
+#+end_src
+
+#+RESULTS:
+: Set.new("e","c")
+: 2
+
+Or even an associative container works out just fine.
+
+#+begin_src raku :results output
+my %items = <a b c d e> (-) <a b d>;
+say %items.raku;
+say +%items;
+#+end_src
+
+#+RESULTS:
+: {:c(Bool::True), :e(Bool::True)}
+: 2
+
+Great. It works. Just don't use array containers for ~Setty~ things. Except that doesn't stop my
+intuition stumbling into this mistake every now and then. The same class of bug has cropped up
+in my code on several occasions because it's just so easy to make the mistake. Raku doesn't tell
+me that I have done something wrong, because maybe it's intentional. But importantly, Raku
+doesn't manage to DWIM.
+
+** Experiment – Custom Array store for Set
+
+I started to dig into the core setting to see what could be done. I was pleasantly surprised to
+find that I could add to the multi dispatch for ~Array.STORE~ to include the semantics I am
+looking for.
+
+#+begin_src raku :results output
+use MONKEY;
+
+augment class Array {
+   multi method STORE(Array:D: Set \item --> Array:D) {
+       self.STORE(item.keys)
+   }
+}
+
+my @a = <a b c d e> (-) <a b d>;
+say @a.raku;
+say +@a;
+#+end_src
+
+#+RESULTS:
+: [Set.new("c","e")]
+: 1
+
+I haven't yet thought about whether there are other related language edges that could be rounded
+off to remove a hazard. First though, it seems prudent to share this to see if there are any
+gotchas or downsides to my little DWIM that I haven't considered. One possible downside is that
+you'd need to use ~,~ to force a ~Set~ into an array if that's what you need to do.
+
+#+begin_src raku :results output
+my @a = <a b c d e> (-) <a b d> , ;
+say @a.raku;
+#+end_src
+
+#+RESULTS:
+: [Set.new("e","c")]
+
+The other approach I could take is to get into the habit of adding type information. That does
+enable Raku to tell me when I fall into this trap.
+
+#+begin_src raku :results output
+my Str @a = <a b c d e> (-) <a b d> ;
+#+end_src
+
+#+RESULTS:
+: Type check failed in assignment to @a; expected Str but got Set (Set.new("e","c"))
+:   in sub  at EVAL_0 line 3
+:   in block <unit> at EVAL_0 line 5
+:   in block <unit> at -e line 1
+
+I hope this generates a discussion about this and other cases where our intuition and Raku's
+behaviour don't quite line up.
