@@ -8,7 +8,7 @@ categories:
 comments: true
 ---
 
-Whenever I work with Sets in Raku they often fail to DWIM. This is a short exploration to see if
+Whenever I work with Sets in Raku they often fail to [[https://docs.raku.org/language/glossary#DWIM][DWIM]]. This is a short exploration to see if
 DWIMminess can be improved.
 
 <!--more-->
