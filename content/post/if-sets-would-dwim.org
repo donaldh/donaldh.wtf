@@ -47,7 +47,7 @@ say +@items;
 : [Set.new()]
 : 1
 
-The fix is relatively simple. Just don't assign to an array. Use a scalar container instead.
+The fix is relatively simple. Just don't assign to an array. Use a scalar container instead:
 
 #+begin_src raku :results output
 my $items = <a b c d e> (-) <a b d>;
@@ -59,7 +59,7 @@ say +$items;
 : Set.new("e","c")
 : 2
 
-Or even an associative container works out just fine.
+Or even an associative container works out just fine:
 
 #+begin_src raku :results output
 my %items = <a b c d e> (-) <a b d>;
@@ -71,11 +71,39 @@ say +%items;
 : {:c(Bool::True), :e(Bool::True)}
 : 2
 
+Or explicity take the list of keys before assignment:
+
+#+begin_src raku :results output
+my @items = (<a b c d e> (-) <a b d>).keys;
+say @items.raku;
+say +@items;
+#+end_src
+
+#+RESULTS:
+: ["e", "c"]
+: 2
+
 Great. It works. Just don't use array containers for ~Setty~ things. Except that doesn't stop my
 intuition stumbling into this mistake every now and then. The same class of bug has cropped up
 in my code on several occasions because it's just so easy to make the mistake. Raku doesn't tell
 me that I have done something wrong, because maybe it's intentional. But importantly, Raku
 doesn't manage to DWIM.
+
+The other approach I could take is to get into the habit of adding type information. That does
+enable Raku to tell me when I fall into this trap.
+
+#+begin_src raku :results output
+my Str @a = <a b c d e> (-) <a b d> ;
+#+end_src
+
+#+RESULTS:
+: Type check failed in assignment to @a; expected Str but got Set (Set.new("e","c"))
+:   in sub  at EVAL_0 line 3
+:   in block <unit> at EVAL_0 line 5
+:   in block <unit> at -e line 1
+
+That's a clear example where adding type information helps the Raku compiler to help me avoid
+introducing this kind of bug.
 
 ** Experiment – Custom Array store for Set
 
@@ -98,13 +126,12 @@ say +@a;
 #+end_src
 
 #+RESULTS:
-: [Set.new("c","e")]
-: 1
+: ["c", "e"]
+: 2
 
-I haven't yet thought about whether there are other related language edges that could be rounded
-off to remove a hazard. First though, it seems prudent to share this to see if there are any
-gotchas or downsides to my little DWIM that I haven't considered. One possible downside is that
-you'd need to use ~,~ to force a ~Set~ into an array if that's what you need to do.
+It seems prudent to share this to see if there are any gotchas or downsides to my little DWIM
+that I haven't considered. One possible downside is that you'd need to use ~,~ to force a ~Set~
+into an array if that's what you need to do.
 
 #+begin_src raku :results output
 my @a = <a b c d e> (-) <a b d> , ;
@@ -114,21 +141,8 @@ say @a.raku;
 #+RESULTS:
 : [Set.new("e","c")]
 
-The other approach I could take is to get into the habit of adding type information. That does
-enable Raku to tell me when I fall into this trap.
-
-#+begin_src raku :results output
-my Str @a = <a b c d e> (-) <a b d> ;
-#+end_src
-
-#+RESULTS:
-: Type check failed in assignment to @a; expected Str but got Set (Set.new("e","c"))
-:   in sub  at EVAL_0 line 3
-:   in block <unit> at EVAL_0 line 5
-:   in block <unit> at -e line 1
-
-That's a clear example where adding type information helps the Raku compiler to help me from
-introducing this kind of bug.
+** What Next
 
 I hope this generates a discussion about this and other cases where our intuition and Raku's
-behaviour don't quite line up.
+behaviour don't quite line up. Maybe there are other related language edges that could be
+smoothed off to remove this kind of hazard.
