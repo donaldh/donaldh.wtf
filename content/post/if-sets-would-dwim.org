@@ -146,3 +146,10 @@ say @a.raku;
 I hope this generates a discussion about this and other cases where our intuition and Raku's
 behaviour don't quite line up. Maybe there are other related language edges that could be
 smoothed off to remove this kind of hazard.
+
+** Follow Up
+
+There has been some really enlightening discussion over on [[https://t.co/0QSoMxrSXf?amp=1][Reddit]] covering the language
+semantics and various alternative approaches. It's fair to say that my suggested approach
+introduces more inconsistency than value, but the discussion may lead to a language consistent
+solution.
