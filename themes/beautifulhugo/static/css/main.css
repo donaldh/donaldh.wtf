@@ -727,3 +727,12 @@ figcaption {
     padding: 0.5em;
     color: #808080;
 }
+
+.edge-to-edge {
+    display: inline-block;
+    height: auto;
+    max-width: 1600px;
+    width: 100vw;
+    margin-left: -35vw;
+    margin-right: -35vw;
+}
