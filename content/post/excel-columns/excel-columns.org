@@ -28,7 +28,7 @@ e.g. ~25.base(26)~, except that the symbols we want to use are ~A..Z~ not ~0..P~
 roll our own – just need to iteratively pick the character for ~$value mod 26~ and repeat with
 ~$value div 26~.
 
-#+begin_src perl6 :results output :tangle yes :shebang "#!/usr/bin/env perl6"
+#+begin_src raku :results output :tangle yes :shebang "#!/usr/bin/env raku"
   #| Convert column value to name where 1 <= value <= 16384
   multi MAIN(Int $value is copy where 1 <= * <= 16384) {
       my @alphabet = 'A'..'Z';
@@ -45,7 +45,7 @@ roll our own – just need to iteratively pick the character for ~$value mod 26~
 For the name to value conversion, first map each character to a value then reduce the list of
 values ~$left * 26 + $right~.
 
-#+begin_src perl6 :results output :tangle yes
+#+begin_src raku :results output :tangle yes
   #| Convert column name to value
   multi MAIN(Str $name where /^<[A..Z]>+$/) {
       my %map = flat 'A'..'Z' Z 1..26;
@@ -57,22 +57,22 @@ Each conversion method is a ~multi MAIN~ with parameter validation. Pod comments
 gets included in the usage message:
 
 #+BEGIN_SRC sh :results output
-./excel-columns.pl6
+./excel-columns.raku
 #+END_SRC
 
 #+RESULTS:
 : Usage:
-:   ./excel-columns.pl6 <value> -- Convert column value to name where 1 <= value <= 16384
-:   ./excel-columns.pl6 <name> -- Convert column name to value
+:   ./excel-columns.raku <value> -- Convert column value to name where 1 <= value <= 16384
+:   ./excel-columns.raku <name> -- Convert column name to value
 
 
 #+BEGIN_SRC sh :results output
-./excel-columns.pl6 1
-./excel-columns.pl6 28
-./excel-columns.pl6 16384
-./excel-columns.pl6 A
-./excel-columns.pl6 AD
-./excel-columns.pl6 XFD
+./excel-columns.raku 1
+./excel-columns.raku 28
+./excel-columns.raku 16384
+./excel-columns.raku A
+./excel-columns.raku AD
+./excel-columns.raku XFD
 #+END_SRC
 
 #+RESULTS:
@@ -86,11 +86,11 @@ gets included in the usage message:
 The code will only execute for valid input values, otherwise the usage is displayed:
 
 #+BEGIN_SRC sh :results output
-./excel-columns.pl6 16385
+./excel-columns.raku 16385
 #+END_SRC
 
 #+RESULTS:
 : Usage:
-:   ./excel-columns.pl6 <value> -- Convert column value to name where 1 <= value <= 16384
-:   ./excel-columns.pl6 <name> -- Convert column name to value
+:   ./excel-columns.raku <value> -- Convert column value to name where 1 <= value <= 16384
+:   ./excel-columns.raku <name> -- Convert column name to value
 

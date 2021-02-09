@@ -1,4 +1,4 @@
-#!/usr/bin/env perl6
+#!/usr/bin/env raku
 #| Convert column value to name where 1 <= value <= 16384
 multi MAIN(Int $value is copy where 1 <= * <= 16384) {
     my @alphabet = 'A'..'Z';

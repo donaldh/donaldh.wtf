@@ -1,7 +1,8 @@
 ---
-title: "Roman Numerals in Perl 6"
+title: "Roman Numerals in Raku"
 date: 2019-05-29T10:23:44+01:00
 tags:
+  - challenge
   - perl6
   - raku
 categories:
@@ -9,7 +10,7 @@ categories:
 comments: true
 ---
 
-My first shot at the [[https://perlweeklychallenge.org/][Perl Weekly Challenge]] with a Roman numeral encoder in Perl 6.
+My first shot at the [[https://perlweeklychallenge.org/][Perl Weekly Challenge]] with a Roman numeral encoder in Raku (nee Perl 6).
 
 <!--more-->
 
@@ -29,7 +30,7 @@ A Roman numeral can be decoded by splitting it into symbols, converting each to 
 adding the decimals to give a result. 'One-before' numerals such as ~IX~ can be handled as a single symbol,
 giving this list of symbols:
 
-#+BEGIN_SRC perl6
+#+BEGIN_SRC raku :tangle roman-decode.raku :shebang "#!/usr/bin/env raku"
   my %r2i =
   'I' => 1, 'IV' => 4, 'V' => 5, 'IX' => 9,
   'X' => 10, 'XL' => 40, 'L' => 50, 'XC' => 90,
@@ -39,12 +40,13 @@ giving this list of symbols:
 The decode algorithm can be implemented by matching all the symbols, taking a slice of the conversion
 map and then reducing the slice to its sum.
 
-#+BEGIN_SRC perl6
+#+BEGIN_SRC raku :tangle roman-decode.raku
+  my $roman = 'CCXLVI';
   say [+] %r2i{ $roman.match(/ ( <{%r2i.keys}> )* /).flat>>.Str }
 #+END_SRC
 
 #+BEGIN_SRC sh
-  ./roman.pl6 decode CCXLVI
+  ./roman-decode.raku
   246
 #+END_SRC
 
@@ -52,7 +54,7 @@ That works fine but is surprisingly slow, more so for long numerals. Instead of 
 match, we can use split and keep the delimiter values with ~:v~ – though we do need to filter out
 all the zero length strings between the delimiters.
 
-#+BEGIN_SRC perl6
+#+BEGIN_SRC raku
   say [+] %r2i{ $roman.split(%r2i.keys, :v).grep(*.Bool) }
 #+END_SRC
 
@@ -69,7 +71,7 @@ The encode algorithm can be implemented by using integer arithmetic to find how 
 symbol is required, starting with the numerically largest symbol ~M~ and then concatenating the
 symbols together.
 
-#+BEGIN_SRC perl6
+#+BEGIN_SRC raku :tangle roman-encode.raku :shebang "#!/usr/bin/env raku"
   say [~] gather {
       for %i2r.keys.sort: -* -> $radix {
           take %i2r{$radix} x $number / $radix;
@@ -79,7 +81,7 @@ symbols together.
 #+END_SRC
 
 #+BEGIN_SRC sh
-  ./roman.pl6 encode 39
+  ./roman.raku encode 39
   XXXIX
 #+END_SRC
 
@@ -90,9 +92,7 @@ explicit iterative solution. Enough time spent already so that will be for anoth
 
 *** The Resulting Program
 
-#+BEGIN_SRC perl6
-  #!/usr/bin/env perl6
-
+#+BEGIN_SRC raku :tangle roman.raku :shebang "#!/usr/bin/env raku"
   use v6;
 
   my %r2i =
@@ -116,16 +116,18 @@ explicit iterative solution. Enough time spent already so that will be for anoth
   }
 #+END_SRC
 
+#+RESULTS:
+
 #+BEGIN_SRC sh
-  ./roman.pl6 decode MMXIX
+  ./roman.raku decode MMXIX
   2019
 
-  ./roman.pl6 decode MCMLXXXIV
+  ./roman.raku decode MCMLXXXIV
   1984
 
-  ./roman.pl6 encode 2019
+  ./roman.raku encode 2019
   MMXIX
 
-  ./roman.pl6 encode 1984
+  ./roman.raku encode 1984
   MCMLXXXIV
 #+END_SRC

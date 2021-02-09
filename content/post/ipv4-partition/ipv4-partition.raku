@@ -1,4 +1,4 @@
-#!/usr/bin/env perl6
+#!/usr/bin/env raku
 multi find-ips(Str $input where / \d ** 4..12 /) {
     gather {
         take .list.flat.join('.')
@@ -8,7 +8,8 @@ multi find-ips(Str $input where / \d ** 4..12 /) {
 }
 
 multi find-ips(Str $input) {
-    die "{$input} is not a valid input, it should be 4 to 12 digits.";
+    note "Sorry: {$input} is not a valid input, it should be 4 to 12 digits.";
+    exit
 }
 
 sub MAIN(Str $input) {

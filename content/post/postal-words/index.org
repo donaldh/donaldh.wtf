@@ -2,13 +2,14 @@
 title: "Postal Words"
 date: 2019-06-24T16:45:58+01:00
 tags:
+  - challenge
   - perl6
   - raku
 categories:
   - code
 comments: true
 ---
-This is a solution to challenge #2 from the [[https://perlweeklychallenge.org/blog/perl-weekly-challenge-014/][14th Perl Weekly Challenge]].
+This is a solution to challenge #2 from the [[https://perlweeklychallenge.org/blog/perl-weekly-challenge-014/][14th Perl Weekly Challenge]], written in Raku.
 
 <!--more-->
 
@@ -42,7 +43,7 @@ Produces:
 I decided to use ~/usr/share/dict/words~ as a corpus, which contains 235886 words on my Mac. We
 only need to consider words with an even number of characters:
 
-#+BEGIN_SRC perl6
+#+BEGIN_SRC raku
 my @words = '/usr/share/dict/words'.IO.lines.grep: *.chars %% 2;
 #+END_SRC
 
@@ -50,7 +51,7 @@ I solved the challenge by recursively picking candidate words that have a substr
 as a key in ~%states~, starting with ~.substr(0,2)~ and looking further right with each
 recursion:
 
-#+BEGIN_SRC perl6
+#+BEGIN_SRC raku
 sub reduce(@words, Int $pos = 0) {
     my @candidates = @words.grep: { %states{.substr($pos, 2)}:exists };
     if +@candidates {
@@ -67,13 +68,13 @@ my @longest = reduce(@words);
 
 The last step was to format the result by using ~.comb~ to get pairs of chars and taking a slice of ~%states~ :
 
-#+BEGIN_SRC perl6
+#+BEGIN_SRC raku
 say %states{.comb(/\w\w/)}.join(' '), ' -> ', .Str for @longest;
 #+END_SRC
 
 Here is the complete solution:
 
-#+BEGIN_SRC perl6 :results output
+#+BEGIN_SRC raku :results output
 my %states = (.split(/\t/)[0,5] for 'us-abbrevs.txt'.IO.lines).flat.map: -> $a, $b { $b.lc => $a };
 my @words = '/usr/share/dict/words'.IO.lines.grep: *.chars %% 2;
 say "Searching {+@words} words";
