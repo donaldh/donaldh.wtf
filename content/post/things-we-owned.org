@@ -1,0 +1,100 @@
+---
+title: "Things We Owned"
+date: 2021-02-20T16:00:00Z
+tags:
+  - nostalgia
+categories:
+  - home
+  - life
+comments: true
+---
+
+# summary text
+
+<!--more-->
+
+# content
+
+** Sinclair ZX81
+
+The [[https://en.wikipedia.org/wiki/ZX81][Sinclair ZX81]] was our first computer. Dad had brought home microcontroller based prototype
+boards from work before, the kind that could be programmed from a hex keypad. But it was really
+exciting to be getting a real computer. We got the kit that had to be soldered and built by
+hand, which heightened the excitement as I watched patiently as Dad soldered all the
+components. It didn't work on the first try – only after hours of cross-checking against the
+build instructions did we discover that a resistor pack was the wrong way round.
+
+#+caption: The ZX81 with notorious RAM pack and ZX Printer
+[[https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/ZX81_-_rampack_-_ZX_Printer.jpg/440px-ZX81_-_rampack_-_ZX_Printer.jpg]]
+
+Next came the challenge of learning what we could do with it. As I recall, the manual was good
+at explaining Basic and at opening up the possibilities ahead. We pretty quickly hit the 1K
+memory limits and built a 16K RAM pack from a kit. It suffered the same wobble problem as the
+official RAM pack so ended up being rigidly fixed to ZX81 case with aluminium brackets.
+
+Our ZX81, with an Analog to Digital converter board, served as a weather station for many years
+– with terrible low-resolution graphs.
+
+** Sinclair ZX Spectrum
+
+The [[https://en.wikipedia.org/wiki/ZX_Spectrum][ZX Spectrum]] was hotly anticipated in our house, from the moment of the first press
+release. It took a great deal of persuasion to get my parents to fork out for one so soon after
+the ZX81.
+
+#+caption: The original ZX Spectrum arrived in 1982
+[[https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/ZXSpectrum48k.jpg/600px-ZXSpectrum48k.jpg]]
+
+My dad used the Spectrum as a word processor, using [[https://en.wikipedia.org/wiki/Tasword][Tasword]] to write his travel journals. We
+ended up getting all the accessories, including [[https://en.wikipedia.org/wiki/ZX_Microdrive][Microdrives]] and the very dubious [[https://en.wikipedia.org/wiki/ZX_Printer][ZX Printer]].
+
+I have very fond memories playing games like [[https://en.wikipedia.org/wiki/Atic_Atac][Atic Atac]], [[https://en.wikipedia.org/wiki/Jetpac][Jetpac]] and [[https://en.wikipedia.org/wiki/Manic_Miner][Manic Miner]] as well as
+starting to learn Z80 assembly language.
+
+*** Interface 1
+
+The Microdrives came with an adapter module called [[https://en.wikipedia.org/wiki/ZX_Interface_1][Interface 1]] that also had an RS232 serial
+interface. This opened up the world of communications to us and with an [[https://en.wikipedia.org/wiki/Acoustic_coupler][Acoustic coupler]] we were
+able to dial up bulletin boards.
+
+[[https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/ZX_Interface1_Microdrive.jpg/440px-ZX_Interface1_Microdrive.jpg]]
+
+I remember long evenings at computer club meetings where we'd take turns with the phone line,
+trying to connect to bulletin boards and share our achievements with the world.
+
+** Teletype
+
+One day Dad came home with this hulking great [[https://en.wikipedia.org/wiki/Teletype_Model_33][Teletype]] that he had salvaged from a skip at
+work. It was slow, noisy and only had an upper-case ASCII character set, but it was still a huge
+step up from the ZX Printer.
+
+#+caption: A Teletype Model 33 with punched tape reader and writer
+[[https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/Teletype-IMG_7287.jpg/600px-Teletype-IMG_7287.jpg]]
+
+The Teletype had a punched tape reader and writer, which was an entertaining but painfully slow
+way to save and load programs. It was a noisy beast and I recall it had a sound deadening
+enclosure which quietened it down to merely being noisy instead of deafening.
+
+** Amstrad CPC 6128
+
+After the ZX Spectrum we had various upgrades including a Spectrum+ but things really stepped up
+when we bought an [[https://en.wikipedia.org/wiki/Amstrad_CPC][Amstrad CPC 6128]]. This was considered a **proper computer** because it could run [[https://en.wikipedia.org/wiki/CP/M][CP/M]].
+
+[[https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Schneider_CPC6128_white.jpg/600px-Schneider_CPC6128_white.jpg]]
+
+The Amstrad CPC also had an integral 3 inch floppy drive so we finally entered the world of
+fast, reliable loading and saving. There was also better graphics and an actual sound chip.
+
+** Amstrad PC1640
+
+And then came the [[https://en.wikipedia.org/wiki/PC1512][Amstrad PC1640]], our entry into the IBM-PC compatible world and MS-DOS.
+
+[[https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Schneider_Amstrad_PC_1512_DD_Transparent_BG.png/500px-Schneider_Amstrad_PC_1512_DD_Transparent_BG.png]]
+
+Like all our computers before it, the Amstrad PC was relegated to running as a weather station
+when it eventually got superseded. The weather station was expected to run 24/7 and this exposed
+an unfortunate bug in the BIOS. After a certain amount of time, maybe 2 or 3 days – I can't
+remember, the machine would lock up. After doing the maths we figured it was an integer overflow
+in the BIOS clock code. As a workaround I managed to develop a [[https://en.wikipedia.org/wiki/Terminate_and_stay_resident_program][TSR]] that would wake up and reset
+the counter before the overflow occurred.
+
+All this in 5 years! Happy days.
