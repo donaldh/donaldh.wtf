@@ -1,0 +1,120 @@
+---
+title: "kgt in Org Babel"
+date: 2021-02-27T16:31:50Z
+tags:
+  - org
+  - literate
+categories:
+  - code
+comments: true
+---
+
+Making use of kgt in Emacs Org-mode with a new Babel driver.
+
+<!--more-->
+
+kgt is an excellent tool written by [[https://twitter.com/thingskatedid][@thingskatedid]] for converting E?BNF grammars into railroad
+diagrams. I like to write literate blog posts using Babel in Org-mode so I decided to flex my
+non-existent elisp powers and write a new Babel backend.
+
+The /ob-kgt/ driver has /:in/ and /:out/ parameters as well as the standard babel features. For
+example, the following source block will generate an ASCII railroad in a results block.
+
+#+begin_src org
+,#+begin_src kgt :in bnf :out rrtext
+<expr> ::= <term> "+" <expr>
+        |  <term>
+,#+end_src
+#+end_src
+
+By default, /:in=bnf/ and /:out=rrutf8/ for Unicode railroads.
+
+** Setting Up
+
+ob-kgt.el is currently available from my dotfiles here:
+
+- https://github.com/donaldh/dotfiles/blob/master/emacs/emacs.d.symlink/local/ob-kgt.el
+
+You can get hold of kgt here:
+
+- [[https://github.com/katef/kgt]]
+
+You can find out more about Org Babel here:
+
+- [[https://orgmode.org/worg/org-contrib/babel/]]
+
+
+** ASCII Output
+
+#+begin_src org
+,#+begin_src kgt :out rrtext
+<expr> ::= <term> "+" <expr>
+        |  <term>
+,#+end_src
+#+end_src
+
+#+begin_src kgt :out rrtext :exports results
+<expr> ::= <term> "+" <expr>
+        |  <term>
+#+end_src
+
+#+RESULTS:
+: expr:
+:     ||--v-- term -- "+" -- expr -->--||
+:         |                         |
+:         `--------- term ----------'
+: 
+
+** Unicode Output
+
+#+begin_src org
+,#+begin_src kgt
+<expr> ::= <term> "+" <expr>
+        |  <term>
+,#+end_src
+#+end_src
+
+#+begin_src kgt :exports results
+<expr> ::= <term> "+" <expr>
+        |  <term>
+#+end_src
+
+#+RESULTS:
+: expr:
+:     │├──╮── term ── "+" ── expr ──╭──┤│
+:         │                         │
+:         ╰───────── term ──────────╯
+: 
+
+** SVG Output
+
+#+begin_src org
+,#+begin_src kgt :out svg :file expr.svg :results file
+<expr> ::= <term> "+" <expr>
+        |  <term>
+
+<term> ::= <factor> "*" <term>
+        |  <factor>
+
+<factor> ::= "(" <expr> ")"
+          |  <const>
+
+<const> ::= <integer>
+,#+end_src
+#+end_src
+
+#+begin_src kgt :out svg :file expr.svg :results file :exports results
+<expr> ::= <term> "+" <expr>
+        |  <term>
+
+<term> ::= <factor> "*" <term>
+        |  <factor>
+
+<factor> ::= "(" <expr> ")"
+          |  <const>
+
+<const> ::= <integer>
+#+end_src
+
+#+RESULTS:
+[[file:expr.svg]]
