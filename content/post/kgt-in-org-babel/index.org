@@ -117,4 +117,5 @@ You can find out more about Org Babel here:
 #+end_src
 
 #+RESULTS:
+#+attr_html: :alt SVG railroad diagram for the BNF in the example :title SVG railroad diagram for the BNF in the example
 [[file:expr.svg]]
