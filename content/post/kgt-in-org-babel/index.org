@@ -13,9 +13,10 @@ Making use of kgt in Emacs Org-mode with a new Babel driver.
 
 <!--more-->
 
-kgt is an excellent tool written by [[https://twitter.com/thingskatedid][@thingskatedid]] for converting E?BNF grammars into railroad
+[[https://github.com/katef/kgt][kgt]] is an excellent tool written by [[https://twitter.com/thingskatedid][@thingskatedid]] for converting E?BNF grammars into railroad
 diagrams. I like to write literate blog posts using Babel in Org-mode so I decided to flex my
-non-existent elisp powers and write a new Babel backend.
+non-existent elisp powers and write a new Babel backend – that tiny bit of glue between Org-mode
+and a compiler, interpreter or useful CLI tool.
 
 The /ob-kgt/ driver has /:in/ and /:out/ parameters as well as the standard babel features. For
 example, the following source block will generate an ASCII railroad in a results block.
@@ -27,7 +28,7 @@ example, the following source block will generate an ASCII railroad in a results
 ,#+end_src
 #+end_src
 
-By default, /:in=bnf/ and /:out=rrutf8/ for Unicode railroads.
+By default, ~:in=bnf~ and ~:out=rrutf8~ for Unicode railroad diagrams.
 
 ** Setting Up
 
@@ -35,7 +36,10 @@ ob-kgt.el is currently available from my dotfiles here:
 
 - https://github.com/donaldh/dotfiles/blob/master/emacs/emacs.d.symlink/local/ob-kgt.el
 
-You can get hold of kgt here:
+You need to put ob-kgt.el in your Emacs load path and then add ~(kgt . t)~ to your
+~org-babel-load-languages~.
+
+kgt needst to be installed on your machine. You can get hold of kgt here:
 
 - [[https://github.com/katef/kgt]]
 
