@@ -9,20 +9,21 @@ categories:
 comments: true
 ---
 
-# summary text
+The computers and peripherals we owned in the 1980s.
 
 <!--more-->
 
-# content
-
 ** Sinclair ZX81
 
-The [[https://en.wikipedia.org/wiki/ZX81][Sinclair ZX81]] was our first computer. Dad had brought home microcontroller based prototype
-boards from work before, the kind that could be programmed from a hex keypad. But it was really
-exciting to be getting a real computer. We got the kit that had to be soldered and built by
-hand, which heightened the excitement as I watched patiently as Dad soldered all the
-components. It didn't work on the first try – only after hours of cross-checking against the
-build instructions did we discover that a resistor pack was the wrong way round.
+My world of computers began in 1981 when I was 9 years old. The [[https://en.wikipedia.org/wiki/ZX81][Sinclair ZX81]], named after the
+year it was produced, was our first computer. Dad had brought home microcontroller based
+prototype boards from work before, the kind that could be programmed from a hex keypad. But it
+was really exciting to be getting a real computer.
+
+We got the kit that had to be soldered and built by hand, which heightened the excitement as I
+watched patiently as Dad soldered all the components. It didn't work on the first try – only
+after hours of cross-checking against the build instructions did we discover that a resistor
+pack was the wrong way round.
 
 #+caption: The ZX81 with notorious RAM pack and ZX Printer
 [[https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/ZX81_-_rampack_-_ZX_Printer.jpg/440px-ZX81_-_rampack_-_ZX_Printer.jpg]]
@@ -30,7 +31,7 @@ build instructions did we discover that a resistor pack was the wrong way round.
 Next came the challenge of learning what we could do with it. As I recall, the manual was good
 at explaining Basic and at opening up the possibilities ahead. We pretty quickly hit the 1K
 memory limits and built a 16K RAM pack from a kit. It suffered the same wobble problem as the
-official RAM pack so ended up being rigidly fixed to ZX81 case with aluminium brackets.
+official RAM pack so ended up being rigidly fixed to the ZX81 case with aluminium brackets.
 
 Our ZX81, with an Analog to Digital converter board, served as a weather station for many years
 – with terrible low-resolution graphs.
@@ -56,6 +57,7 @@ The Microdrives came with an adapter module called [[https://en.wikipedia.org/wi
 interface. This opened up the world of communications to us and with an [[https://en.wikipedia.org/wiki/Acoustic_coupler][Acoustic coupler]] we were
 able to dial up bulletin boards.
 
+#+caption: A ZX Interface 1 with attached Microdrive and a cartridge
 [[https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/ZX_Interface1_Microdrive.jpg/440px-ZX_Interface1_Microdrive.jpg]]
 
 I remember long evenings at computer club meetings where we'd take turns with the phone line,
@@ -79,6 +81,7 @@ enclosure which quietened it down to merely being noisy instead of deafening.
 After the ZX Spectrum we had various upgrades including a Spectrum+ but things really stepped up
 when we bought an [[https://en.wikipedia.org/wiki/Amstrad_CPC][Amstrad CPC 6128]]. This was considered a **proper computer** because it could run [[https://en.wikipedia.org/wiki/CP/M][CP/M]].
 
+#+caption: A Schneider branded version of the CPC 6128
 [[https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Schneider_CPC6128_white.jpg/600px-Schneider_CPC6128_white.jpg]]
 
 The Amstrad CPC also had an integral 3 inch floppy drive so we finally entered the world of
@@ -88,6 +91,7 @@ fast, reliable loading and saving. There was also better graphics and an actual 
 
 And then came the [[https://en.wikipedia.org/wiki/PC1512][Amstrad PC1640]], our entry into the IBM-PC compatible world and MS-DOS.
 
+#+caption: An Amstrad PC1512 with twin floppy drives
 [[https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Schneider_Amstrad_PC_1512_DD_Transparent_BG.png/500px-Schneider_Amstrad_PC_1512_DD_Transparent_BG.png]]
 
 Like all our computers before it, the Amstrad PC was relegated to running as a weather station
