@@ -1,3 +1,3 @@
 # donaldh.wtf
 
-http://donaldh.wtf/
+https://donaldh.wtf/
