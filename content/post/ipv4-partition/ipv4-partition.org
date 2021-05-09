@@ -33,21 +33,20 @@ This challenge looks like it can be solved using regular expressions. Let's star
 regex for valid IP addresses.
 
 #+BEGIN_SRC raku :results output
-  my $regex = / ^ ( '25' <[0..5]>          # 25n - covers 250 to 255
-                    | [
-                        [ '2' <[0..4]>     # 2n. – covers 20n to 24n
-                          | '1' <[0..9]>   # 1n. – covers 10n to 19n
-                          | <[1..9]>       #  n. – covers  1n to  9n
-                        ]?                 # ^^  – optional
-                        <[0..9]> ]         #   n – last digit for 0 to 249
-                  ) ** 4 % '.' $ /;        # ^^^ x 4 separated by '.'
+my $regex = / ^ ( '25' <[0..5]>          # 25n - covers 250 to 255
+                  | [
+                      [ '2' <[0..4]>     # 2n. – covers 20n to 24n
+                        | '1' <[0..9]>   # 1n. – covers 10n to 19n
+                        | <[1..9]>       #  n. – covers  1n to  9n
+                      ]?                 # ^^  – optional
+                      <[0..9]> ]         #   n – last digit for 0 to 249
+                ) ** 4 % '.' $ /;        # ^^^ x 4 separated by '.'
 
-  for <0.0.0.0 1.1.1.1 10.0.0.1 10.10.10.10 192.168.1.254 199.199.199.199 201.201.201.201
-       249.249.249.249 250.250.250.250 255.255.255.255 1.1.1.1. 1.01.1.1 1.2.3.256
-       256.1.1.1 1..3.4 1.2.3.4.5 1.1.1.01> -> $candidate {
-      say "{$candidate} is {$candidate ~~ $regex ?? "an IP address" !! "not valid"}";
-  }
-
+for <0.0.0.0 1.1.1.1 10.0.0.1 10.10.10.10 192.168.1.254 199.199.199.199 201.201.201.201
+     249.249.249.249 250.250.250.250 255.255.255.255 1.1.1.1. 1.01.1.1 1.2.3.256
+     256.1.1.1 1..3.4 1.2.3.4.5 1.1.1.01> -> $candidate {
+    say "{$candidate} is {$candidate ~~ $regex ?? "an IP address" !! "not valid"}";
+}
 #+END_SRC
 
 #+RESULTS:
@@ -80,11 +79,11 @@ We should be able to simplify the regex by using a code block to validate the oc
 not quite strict enough so the code below allows leading zeros:
 
 #+BEGIN_SRC raku :results output
-  my $regex = / ^ ( \d ** 1..3 <?{ $/.Int < 256 }> ) ** 4 % '.' $ /;
+my $regex = / ^ ( \d ** 1..3 <?{ $/.Int < 256 }> ) ** 4 % '.' $ /;
 
-  for <192.168.1.1 1.01.1.1 1.2.3.256> -> $candidate {
-      say "{$candidate} is {$candidate ~~ $regex ?? "an IP address" !! "not valid"}";
-  }
+for <192.168.1.1 1.01.1.1 1.2.3.256> -> $candidate {
+    say "{$candidate} is {$candidate ~~ $regex ?? "an IP address" !! "not valid"}";
+}
 #+END_SRC
 
 #+RESULTS:
@@ -98,11 +97,11 @@ This next avoids matching leading zeros by ensuring that the leftmost digit in a
 will only match ~1..9~.
 
 #+BEGIN_SRC raku :results output
-  my $regex = / ^ ( [ <[1..9]> \d? ]? \d <?{ $/.Int < 256 }> ) ** 4 % '.' $ /;
+my $regex = / ^ ( [ <[1..9]> \d? ]? \d <?{ $/.Int < 256 }> ) ** 4 % '.' $ /;
 
-  for <192.168.1.1 1.01.1.1 10.109.0.1 10.0.0.1> -> $candidate {
-      say "{$candidate} is {$candidate ~~ $regex ?? "an IP address" !! "not valid"}";
-  }
+for <192.168.1.1 1.01.1.1 10.109.0.1 10.0.0.1> -> $candidate {
+    say "{$candidate} is {$candidate ~~ $regex ?? "an IP address" !! "not valid"}";
+}
 #+END_SRC
 
 #+RESULTS:
@@ -118,30 +117,30 @@ Making use of this regex, I adapted it to the IPv4 partition problem by first dr
 separator and then using the ~:exhaustive~ adverb to find all possible matches.
 
 #+BEGIN_SRC raku :results output :tangle yes :shebang "#!/usr/bin/env raku"
-  multi find-ips(Str $input where / \d ** 4..12 /) {
-      gather {
-          take .list.flat.join('.')
-          for $input ~~ m:exhaustive
-              / ^ ( <[1..9]> ** 0..2 \d <?{ $/.Int < 256 }> ) ** 4 $ /
-      }
-  }
+multi find-ips(Str $input where / \d ** 4..12 /) {
+    gather {
+        take .list.flat.join('.')
+        for $input ~~ m:exhaustive
+            / ^ ( <[1..9]> ** 0..2 \d <?{ $/.Int < 256 }> ) ** 4 $ /
+    }
+}
 #+END_SRC
 
 I added a ~multi~ variant to catch invalid input and a ~MAIN~ for running it.
 
 #+BEGIN_SRC raku :results output :tangle yes
-  multi find-ips(Str $input) {
-      note "Sorry: {$input} is not a valid input, it should be 4 to 12 digits.";
-      exit 1
-  }
+multi find-ips(Str $input) {
+    note "Sorry: {$input} is not a valid input, it should be 4 to 12 digits.";
+    exit 1
+}
 
-  sub MAIN(Str $input) {
-      CATCH { default { .say } }
+sub MAIN(Str $input) {
+    CATCH { default { .say } }
 
-      my @ips = find-ips($input);
-      say "Found {+@ips} potential IP address{+@ips == 1 ?? '' !! 'es'} in {$input}:";
-      say @ips.join("\n").indent(4);
-  }
+    my @ips = find-ips($input);
+    say "Found {+@ips} potential IP address{+@ips == 1 ?? '' !! 'es'} in {$input}:";
+    say @ips.join("\n").indent(4);
+}
 #+END_SRC
 
 #+RESULTS:
