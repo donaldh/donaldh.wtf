@@ -6,9 +6,11 @@ disqusShortname: donaldh-wtf
 params:
   subtitle: Hacks and Misadventures
   highlight: true
-  useHLJS: true
   rss: true
   topmenu: categories
+markup:
+  highlight:
+    noClasses: false
 permalinks:
   post: '/:year/:month/:slug/'
 author:
