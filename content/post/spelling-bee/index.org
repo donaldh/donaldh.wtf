@@ -26,20 +26,22 @@ These are the spelling bee rules:
 
 This solver finds all the matching words from ~/usr/share/dict/words~.
 
-#+BEGIN_SRC perl6 :results output
-  my @words = '/usr/share/dict/words'.IO.lines>>.lc;
+#+BEGIN_SRC raku :results output
+my @words = '/usr/share/dict/words'.IO.lines>>.lc;
 
-  my $centre = 't';
-  my @allowed = <m c i p l o t>;
+my $centre = 't';
+my @allowed = <m c i p l o t>;
 
-  for @words -> $word {
-      my @chars = $word.comb;
-      say $word if
-          +@chars >= 4 &&             # Is at least 4 chars
-          $centre (elem) @chars &&    # Contains the center char (element of set)
-          @chars (<=) @allowed;        # All chars are allowed (is a subset)
-  }
+for @words -> $word {
+    my @chars = $word.comb;
+    say $word if
+        +@chars >= 4 &&             # Is at least 4 chars
+        $centre (elem) @chars &&    # Contains the center char (element of set)
+        @chars (<=) @allowed;       # All chars are allowed (is a subset)
+}
 #+END_SRC
+
+This spelling bee produces the following words:
 
 #+RESULTS:
 #+begin_example
@@ -138,104 +140,6 @@ topo
 toto
 #+end_example
 
-This spelling bee produces the following words:
-
-#+RESULTS:
-#+begin_example
-clipt
-clit
-cloit
-cloot
-clot
-colitic
-colt
-colt
-commit
-commot
-complot
-coot
-copilot
-copt
-coptic
-coto
-ictic
-illicit
-ilot
-immit
-implicit
-impot
-itmo
-licit
-lilt
-limit
-loot
-lotic
-lotto
-miliolitic
-milt
-mitotic
-mitt
-moit
-molt
-moot
-motmot
-mott
-mott
-motto
-occipitootic
-ocotillo
-octic
-octoic
-octopi
-omit
-oolitic
-optic
-otic
-otitic
-otolitic
-otomi
-otto
-otto
-picot
-pict
-pict
-pilot
-pilot
-pipit
-pitpit
-plot
-politic
-politico
-polt
-poot
-potoo
-pott
-potto
-ptotic
-till
-tillot
-tilt
-timo
-tipiti
-tiptilt
-tiptop
-titi
-toco
-toil
-toit
-toll
-tolt
-tomtit
-tool
-toom
-toop
-toot
-topi
-topic
-topo
-toto
-#+end_example
-
 ** Scoring
 
 These are the scoring rules for the game:
@@ -245,40 +149,40 @@ These are the scoring rules for the game:
 - Pangram words that use all letters earn 7 extra points.
 
 #+BEGIN_SRC raku :results output :tangle bee.raku :shebang "#!/usr/bin/env raku"
-  my @words = '/usr/share/dict/words'.IO.lines>>.lc;
+my @words = '/usr/share/dict/words'.IO.lines>>.lc;
 
-  sub MAIN(Str $chars, Str $centre, :$summary) {
-      my @allowed = $chars.comb;
+sub MAIN(Str $chars, Str $centre, :$summary) {
+    my @allowed = $chars.comb;
 
-      my $final-score = 0;
-      my $found-words = 0;
-      my $bonus-words = 0;
+    my $final-score = 0;
+    my $found-words = 0;
+    my $bonus-words = 0;
 
-      for @words -> $word {
-          my @chars = $word.comb;
-          if +@chars >= 4 &&          # Is at least 4 chars
-          $centre (elem) @chars &&    # Contains the center char (element of set)
-          @chars (<=) @allowed {      # All chars are allowed (is a subset)
+    for @words -> $word {
+        my @chars = $word.comb;
+        if +@chars >= 4 &&          # Is at least 4 chars
+        $centre (elem) @chars &&    # Contains the center char (element of set)
+        @chars (<=) @allowed {      # All chars are allowed (is a subset)
 
-              my $word-score = +@chars == 4 ?? 1 !! +@chars;
-              my $remainder = @allowed (-) @chars;
-              unless +$remainder {
-                  $word-score += 7;
-                  $bonus-words++;
-              }
+            my $word-score = +@chars == 4 ?? 1 !! +@chars;
+            my $remainder = @allowed (-) @chars;
+            unless +$remainder {
+                $word-score += 7;
+                $bonus-words++;
+            }
 
-              $final-score += $word-score;
-              $found-words += 1;
+            $final-score += $word-score;
+            $found-words += 1;
 
-              my $info = +$remainder ?? "unused {$remainder.keys}" !! 'pangram';
-              sprintf("%15s = %2d    %s", $word, $word-score, $info).say unless $summary;
-          }
-      }
+            my $info = +$remainder ?? "unused {$remainder.keys}" !! 'pangram';
+            sprintf("%15s = %2d    %s", $word, $word-score, $info).say unless $summary;
+        }
+    }
 
-      say '';
-      say "Found {$found-words} words from candidate characters {$chars.subst($centre, "[$centre]")}.";
-      say "This spelling bee gets {$final-score} points, with {$bonus-words} bonus words.";
-  }
+    say '';
+    say "Found {$found-words} words from candidate characters {$chars.subst($centre, "[$centre]")}.";
+    say "This spelling bee gets {$final-score} points, with {$bonus-words} bonus words.";
+}
 #+END_SRC
 
 #+begin_src sh :results output
@@ -390,7 +294,6 @@ This spelling bee gets 353 points, with 1 bonus words.
 #+end_src
 
 #+RESULTS:
-: 
 : Found 53 words from candidate characters [r]dighlo.
 : This spelling bee gets 158 points, with 1 bonus words.
 
@@ -399,7 +302,6 @@ This spelling bee gets 353 points, with 1 bonus words.
 #+end_src
 
 #+RESULTS:
-: 
 : Found 168 words from candidate characters yo[m]ahnr.
 : This spelling bee gets 687 points, with 1 bonus words.
 
@@ -408,7 +310,6 @@ This spelling bee gets 353 points, with 1 bonus words.
 #+end_src
 
 #+RESULTS:
-: 
 : Found 72 words from candidate characters h[u]notgd.
 : This spelling bee gets 308 points, with 2 bonus words.
 
