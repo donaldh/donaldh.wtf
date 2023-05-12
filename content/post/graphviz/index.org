@@ -1,0 +1,192 @@
+---
+title: "Graphviz"
+date: 2023-05-12T08:40:11+01:00
+tags:
+  - org
+  - graphviz
+categories:
+  - code
+comments: true
+---
+
+Some [[https://graphviz.org][Graphviz]] examples that demonstrate custom layout and formatting techniques.
+
+<!--more-->
+
+** Subgraphs and ranking
+
+This example shows how to use [[https://graphviz.org/doc/info/lang.html#subgraphs-and-clusters][subgraph]] to control layout.
+
+#+begin_src dot :file ranked.svg :exports all
+digraph ranked {
+    subgraph cluster_A {
+        a1 -> a2
+        a2 -> a3
+
+        {rank=same;a1;a2;a3}
+    }
+
+    subgraph cluster_B {
+        a3 -> b1
+        b1 -> b2
+        b2 -> b3
+
+        {rank=same;b1;b2;b3}
+    }
+
+    begin -> a1
+}
+#+end_src
+
+#+RESULTS:
+[[file:ranked.svg]]
+
+** HTML formatted nodes
+
+This example shows how to use [[https://graphviz.org/doc/info/shapes.html#html][HTML-like]] formatting.
+
+#+begin_src dot :file html.svg
+digraph html {
+    rankdir=LR
+    a [shape=plaintext,label=<
+      <table cellspacing="4">
+        <tr>
+          <td port="a1">column 1</td>
+          <td>column 2</td>
+        </tr>
+        <tr>
+          <td colspan="2" port="a2">colspan</td>
+        </tr>
+      </table>
+    >]
+    b [shape=plaintext,label=<
+      <table border="0" cellborder="1" cellspacing="2">
+        <tr>
+          <td rowspan="3" port="b2">left</td>
+          <td>top</td>
+          <td rowspan="3">right</td>
+        </tr>
+        <tr>
+          <td port="b1">center</td>
+        </tr>
+        <tr>
+          <td>bottom</td>
+        </tr>
+      </table>
+    >]
+
+    a:a1 -> b:b1
+    a:a2 -> b:b2
+}
+#+end_src
+
+#+RESULTS:
+[[file:html.svg]]
+
+** Network
+
+This example shows how to layout a network diagram using custom node images.
+
+#+begin_src dot :file network.png :exports all :tangle network.dot
+graph network {
+    nodesep=1
+    ranksep=1
+    edge [fontsize=11]
+
+    subgraph wanedge {
+        r1 [shape=none,label="",image="router.svg"]
+        r2 [shape=none,label="",image="router.svg"]
+    }
+
+    subgraph core {
+        c1 [shape=none,label="",image="router.svg"]
+        c2 [shape=none,label="",image="router.svg"]
+
+        {rank=same;c1;c2}
+    }
+
+    r1 -- c1 [headlabel="eth0/0" taillabel="eth1/0"]
+    r2 -- c1 [headlabel="eth0/1" taillabel="eth1/0"]
+    c1 -- c2 [headlabel="eth1/0" taillabel="eth1/0"]
+}
+#+end_src
+
+#+RESULTS:
+[[file:network.png]]
+
+** Records
+
+THis example uses the [[https://graphviz.org/doc/info/shapes.html#record][record]] shape for the nodes.
+
+#+begin_src dot :file record.svg :tangle records.txt :exports both
+digraph Records {
+    node [ shape = "record" ]
+
+    one [ label = "{RecordOne|right\r|centre|left\l}" ]
+    two [ label = "{RecordTwo|row|row|row|row}" ]
+    one -> two
+}
+#+end_src
+
+#+RESULTS:
+[[file:record.svg]]
+
+** UML
+
+This example also uses the [[https://graphviz.org/doc/info/shapes.html#record][record]] shape to draw UML-like class nodes.
+
+#+begin_src dot :file uml.png
+digraph uml {
+    node [ fontsize = 12 shape = "record" ]
+    edge [ arrowtail = "empty" ]
+
+    person [
+    label = "{Person|+ name : string\l+ nationality : string\l|+ getName() : string\l+ isBritish(): boolean\l}"
+    ]
+
+    employee [
+    label = "{Employee|+ id : integer\l+ manager : integer\l|+ getManager() : Manager\l}"
+    ]
+
+    manager [
+    label = "{Manager|\l|+ getStaff(): Employee[]\l}"
+    ]
+
+    person -> employee [dir=back]
+    employee -> manager [dir=back]
+}
+#+end_src
+
+#+RESULTS:
+[[file:uml.png]]
+
+
+** Shape demo
+
+This example demonstrates a variety of the available [[https://graphviz.org/doc/info/shapes.html#polygon][polygon]] shapes.
+
+#+begin_src dot :file shapes.png :exports all
+digraph shapes {
+    a [shape=box]
+    b [shape=polygon,sides=6]
+    c [shape=triangle]
+    d [shape=invtriangle]
+    e [shape=polygon,sides=4,skew=.5]
+    f [shape=polygon,sides=4,distortion=.5]
+    g [shape=diamond]
+    h [shape=Mdiamond]
+    i [shape=Msquare]
+    a -> b
+    a -> c
+    a -> d
+    a -> e
+    a -> f
+    a -> g
+    a -> h
+    a -> i
+}
+#+end_src
+
+#+RESULTS:
+[[file:shapes.png]]
+
