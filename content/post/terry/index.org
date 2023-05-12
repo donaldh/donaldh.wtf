@@ -1,0 +1,36 @@
+---
+title: "Memorialising Terry Pratchett"
+date: 2023-05-12T13:18:36+01:00
+tags:
+  - nostalgia
+  - nerdism
+categories:
+  - interwebs
+comments: true
+---
+
+#+begin_quote
+Keeping the legacy of Sir Terry Pratchett alive forever.
+For as long as his name is still passed along the Clacks,
+Death can't have him.
+#+end_quote
+
+<!--more-->
+
+The idea of memorialising Terry Pratchett in the ~clacks~ is describe here:
+
+[[http://www.gnuterrypratchett.com]]
+
+I added the ~X-Clacks-Overhead~ header to my webserver config a while back and prompty forgot all
+about it. Here's a screen cap of the response headers:
+
+[[file:response-headers.png]]
+
+It's also lurking in my DNS:
+
+#+begin_src sh :results output
+host -t txt donaldh.wtf
+#+end_src
+
+#+RESULTS:
+: donaldh.wtf descriptive text "X-Clacks-Overhead: GNU Terry Pratchett"
