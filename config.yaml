@@ -31,3 +31,4 @@ menu:
     - name: Categories
       url: categories
       weight: 1
+paginate: 15
