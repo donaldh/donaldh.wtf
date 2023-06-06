@@ -1,0 +1,1748 @@
+---
+title: "Teaching strace new tricks"
+date: 2023-06-06T22:15:53+01:00
+tags:
+  - linux
+  - kernel
+  - strace
+categories:
+  - code
+comments: true
+---
+
+# summary text
+
+Writing a code generator to produce strace source files from the openvswitch netlink schemas.
+
+<!--more-->
+
+# content
+
+The [[https://man7.org/linux/man-pages/man1/strace.1.html][strace(1)]] man page says:
+
+#+begin_quote
+Arguments are printed in symbolic form with passion.
+#+end_quote
+
+And it's true! Sure, I know strace gives symbolic output for all the regular syscall parameters,
+but dissecting netlink iovecs? When I ran ~strace ip route~ the fidelity of the output blew me
+away – the rtnetlink message decoding is just fantastic.
+
+#+begin_src sh :results output
+$ strace -e trace=sendmsg,recvmsg ip route get 217.160.0.19
+sendmsg(3, {msg_name={sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, msg_namelen=12, msg_iov=[{iov_base=[{nlmsg_len=36, nlmsg_type=RTM_GETROUTE, nlmsg_flags=NLM_F_REQUEST, nlmsg_seq=1685481981, nlmsg_pid=0}, {rtm_family=AF_INET, rtm_dst_len=32, rtm_src_len=0, rtm_tos=0, rtm_table=RT_TABLE_UNSPEC, rtm_protocol=RTPROT_UNSPEC, rtm_scope=RT_SCOPE_UNIVERSE, rtm_type=RTN_UNSPEC, rtm_flags=RTM_F_LOOKUP_TABLE}, [{nla_len=8, nla_type=RTA_DST}, inet_addr("217.160.0.19")]], iov_len=36}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, 0) = 36
+recvmsg(3, {msg_name={sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, msg_namelen=12, msg_iov=[{iov_base=NULL, iov_len=0}], msg_iovlen=1, msg_controllen=0, msg_flags=MSG_TRUNC}, MSG_PEEK|MSG_TRUNC) = 112
+recvmsg(3, {msg_name={sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, msg_namelen=12, msg_iov=[{iov_base=[{nlmsg_len=112, nlmsg_type=RTM_NEWROUTE, nlmsg_flags=0, nlmsg_seq=1685481981, nlmsg_pid=269817}, {rtm_family=AF_INET, rtm_dst_len=32, rtm_src_len=0, rtm_tos=0, rtm_table=RT_TABLE_MAIN, rtm_protocol=RTPROT_UNSPEC, rtm_scope=RT_SCOPE_UNIVERSE, rtm_type=RTN_UNICAST, rtm_flags=RTM_F_CLONED}, [[{nla_len=8, nla_type=RTA_TABLE}, RT_TABLE_MAIN], [{nla_len=8, nla_type=RTA_DST}, inet_addr("217.160.0.19")], [{nla_len=8, nla_type=RTA_OIF}, if_nametoindex("eth0")], [{nla_len=8, nla_type=RTA_PREFSRC}, inet_addr("192.168.1.43")], [{nla_len=8, nla_type=RTA_GATEWAY}, inet_addr("192.168.1.254")], [{nla_len=8, nla_type=RTA_UID}, 501], [{nla_len=36, nla_type=RTA_CACHEINFO}, {rta_clntref=2, rta_lastuse=1869702, rta_expires=0, rta_error=0, rta_used=0, rta_id=0, rta_ts=0, rta_tsage=0}]]], iov_len=32768}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, 0) = 112
+#+end_src
+
+The only problem is that, other than a few popular netlink families, coverage drops away. None
+of the generic netlink message families have any support at all. Here's the output for a
+~nlctrl~ genetlink message:
+
+#+begin_src sh :results output
+recvmsg(8, {msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base=[{nlmsg_len=192, nlmsg_type=nlctrl, nlmsg_flags=0, nlmsg_seq=1, nlmsg_pid=669908}, {genl_cmd=0x1 /* ??? */, data="\x11\x00\x02\x00\x6f\x76\x73\x5f\x64\x61\x74\x61\x70\x61\x74\x68\x00\x00\x00\x00\x06\x00\x01\x00\x23\x00\x00\x00\x08\x00\x03\x00"...}], iov_len=1024}, {iov_base="", iov_len=65536}], msg_iovlen=2, msg_controllen=0, msg_flags=0}, MSG_DONTWAIT) = 192
+#+end_src
+
+Not so good.
+
+Now it turns out that I've been working a bit with the openvswitch netlink families recently,
+specifically to [[https://lore.kernel.org/netdev/20230527133107.68161-5-donald.hunter@gmail.com/][create schemas]] for them to contribute to the fledgeling [[https://docs.kernel.org/userspace-api/netlink/specs.html][Netlink protocol
+specifications]] project that Jakub Kicinski kicked off. So I'm going to have a go at writing a
+code generator to produce strace source files from the openvswitch netlink schemas. That would
+give us:
+
+  + A shiny new strace that can parse openvswitch netlink messages.
+  + An strace code generator for the ynl toolchain.
+  + Free strace support for future netlink families.
+  + This blog post that gives a fly-by view of extending strace.
+
+There's already a C code generator for [[https://docs.kernel.org/userspace-api/netlink/intro-specs.html][ynl]] that is used to produce kernel code for new netlink
+families. I guess we can start there.
+
+The first problem I thought I'd need to solve is resolving the dynamically generated ids that
+generic netlink families use. But it turns out that strace already [[https://github.com/strace/strace/blob/e343652c3ee32ced566dc9b1e94239a9724c3c54/src/socketutils.c#L552-L646][builds a translation table]]
+for genetlink family ids. So we can get straight on with generating some of [[https://github.com/strace/strace/blob/e343652c3ee32ced566dc9b1e94239a9724c3c54/src/rtnl_link.c#L1633C1-L1736][this]] and some of
+[[https://github.com/strace/strace/blob/e343652c3ee32ced566dc9b1e94239a9724c3c54/src/xlat/rtnl_link_attrs.in#L1-L67][this]].
+
+** Writing the nlctrl decoder
+
+To better understand what we need to generate, I will write the ~nlctrl~ decoding by hand. The
+~nlctrl~ family contains the commands to manage the dynamically allocated genetlink families,
+which includes the commands to discover the family ids from their names.
+
+The netlink decoder already has a table of netlink families where we can add a decoder for
+genetlink. First there's the extern declaration of the handler in ~src/defs.h~:
+
+#+begin_src C
+DECL_NETLINK(generic);
+#+end_src
+
+Then there's the new entry to add to ~netlink_decoders~ in ~src/netlink.c~:
+
+#+begin_src diff
+diff --git a/src/netlink.c b/src/netlink.c
+index e75e90440616..f9de1c889522 100644
+--- a/src/netlink.c
++++ b/src/netlink.c
+@@ -596,7 +596,8 @@ static const netlink_decoder_t netlink_decoders[] = {
+        [NETLINK_ROUTE] = decode_netlink_route,
+        [NETLINK_SELINUX] = decode_netlink_selinux,
+-       [NETLINK_SOCK_DIAG] = decode_netlink_sock_diag
++       [NETLINK_SOCK_DIAG] = decode_netlink_sock_diag,
++       [NETLINK_GENERIC] = decode_netlink_generic
+ };
+#+end_src
+
+Now I need to create a new source file called ~src/netlink_generic.c~ to contain the
+implementation:
+
+#+begin_src C :includes "<stdio.h> <string.h>"
+#include "defs.h"
+#include "netlink.h"
+#include <linux/genetlink.h>
+
+bool
+decode_netlink_generic(struct tcb *const tcp,
+		       const struct nlmsghdr *const nlmsghdr,
+		       const kernel_ulong_t addr,
+		       const unsigned int len)
+{
+        struct genlmsghdr genl;
+
+	if (nlmsghdr->nlmsg_type == NLMSG_DONE)
+		return false;
+
+	if (!umove_or_printaddr(tcp, addr, &genl)) {
+		// ...
+	}
+
+	return true;
+}
+#+end_src
+
+New source files need to be added to the list of ~libstrace_a_SOURCES~ in ~src/Makefile.am~ like
+this:
+
+#+begin_src diff
+diff --git a/src/Makefile.am b/src/Makefile.am
+index e6c22f4b61f5..49821ae25ee2 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -218,6 +218,7 @@ libstrace_a_SOURCES =       \
+        netlink.c       \
+        netlink.h       \
+        netlink_crypto.c \
++       netlink_generic.c \
+        netlink_inet_diag.c \
+        netlink_kobject_uevent.c \
+        netlink_kobject_uevent.h \
+#+end_src
+
+After adding a new source file to ~src/Makefile.am~, you'll want to re-run ~./bootstrap~ and
+then ~./configure~ before building the project again with ~make~.
+
+There is a handy ~xlat~ framework in strace that I can use for the enum definitions of commands
+and attributes that the ~nlctrl~ family needs. Each enum definition goes in a new ~.in~ file in
+~src/xlat~ which the ~./bootstrap~ uses to generate C code containing the translation tables.
+Here is ~src/xlat/genl_nlctl_types.in~:
+
+#+begin_src C
+#unconditional
+#value_indexed
+CTRL_CMD_UNSPEC
+CTRL_CMD_NEWFAMILY
+CTRL_CMD_DELFAMILY
+CTRL_CMD_GETFAMILY
+CTRL_CMD_NEWOPS
+CTRL_CMD_DELOPS
+CTRL_CMD_GETOPS
+CTRL_CMD_NEWMCAST_GRP
+CTRL_CMD_DELMCAST_GRP
+CTRL_CMD_GETMCAST_GRP
+CTRL_CMD_GETPOLICY
+#+end_src
+
+There are a couple of directives for the code generator at the top of the file:
+
++ The ~#unconditional~ directive says not to wrap each item with an ~#ifdef~. We need that for
+  enum definitions.
++ The ~#value_indexed~ directive says that lookup is by value, as opposed to flag field.
+
+We can then ~#include "nlctl_types.h"~ in ~src/netlink_generic.c~ which gives us a ~static const
+struct xlat nlctl_types~ to use in the decoder.
+
+Each netlink family has a set of ~nlattr~ attributes that make up the requests and responses.
+The same ~xlat~ framework is used for mapping these attributes. Here is
+~src/xlat/genl_nlctrl_attrs.in~:
+
+#+begin_src C
+#unconditional
+#value_indexed
+CTRL_ATTR_UNSPEC
+CTRL_ATTR_FAMILY_ID
+CTRL_ATTR_FAMILY_NAME
+CTRL_ATTR_VERSION
+CTRL_ATTR_HDRSIZE
+CTRL_ATTR_MAXATTR
+CTRL_ATTR_OPS
+CTRL_ATTR_MCAST_GROUPS
+CTRL_ATTR_POLICY
+CTRL_ATTR_OP_POLICY
+CTRL_ATTR_OP
+#+end_src
+
+Each attribute also needs a decoder. This is where we incorporate knowledge of the attribute
+type and choose an approproate decoder for each attribute. There are already decoders available
+for most ~nlattr~ types but nested netlink attributes will need a nested decoder.
+
+Here's the array of decoders for the ~nlctrl~ attributes:
+
+#+begin_src C
+static const nla_decoder_t nlctrl_attr_decoders[] = {
+	[CTRL_ATTR_UNSPEC] = NULL,
+	[CTRL_ATTR_FAMILY_ID] = decode_nla_u16,
+	[CTRL_ATTR_FAMILY_NAME] = decode_nla_str,
+	[CTRL_ATTR_VERSION] = decode_nla_u32,
+	[CTRL_ATTR_HDRSIZE] = decode_nla_u32,
+	[CTRL_ATTR_MAXATTR] = decode_nla_u32,
+	[CTRL_ATTR_OPS] = decode_nlctrl_ops,
+	[CTRL_ATTR_MCAST_GROUPS] = decode_nlctrl_mcast,
+	[CTRL_ATTR_POLICY] = decode_nlctrl_policy,
+	[CTRL_ATTR_OP_POLICY] = decode_nlctrl_policy,
+	[CTRL_ATTR_OP] = decode_nla_u32,
+};
+#+end_src
+
+And here's the decoder for ~nlctrl~ messages. It is responsible for decoding the ~cmd~,
+~version~ and the list of ~nlattr~ attributes in each message:
+
+#+begin_src C
+DECL_NETLINK_GENERIC_DECODER(decode_nlctrl_msg) {
+	tprint_struct_begin();
+	PRINT_FIELD_XVAL(*genl, cmd, genl_nlctrl_types, "CTRL_CMD_???");
+	tprint_struct_next();
+	PRINT_FIELD_U(*genl, version);
+	tprint_struct_next();
+
+	decode_nlattr(tcp, addr, len,
+		      genl_nlctrl_attrs,
+		      "CTRL_ATTR_???",
+		      ARRSZ_PAIR(nlctrl_attr_decoders),
+		      NULL);
+
+	tprint_struct_end();
+}
+#+end_src
+
+The final piece of the puzzle is a way to pick the right decoder for the family of genetlink
+message. We only have ~nlctrl~ just now, but this is where we will add more genetlink families.
+
+For simplicity I will declare an array of ~name~ to ~decoder~ pairs and use a linear search to
+find the decoder by family name. This could be improved later if it is ever a performance
+problem.
+
+#+begin_src C
+typedef DECL_NETLINK_GENERIC_DECODER((*netlink_generic_decoder_t));
+
+struct genl_decoder_entry_t {
+	char name[GENL_NAMSIZ];
+	netlink_generic_decoder_t decoder;
+} genl_decoders[] = {
+	{ "nlctrl", decode_nlctrl_msg },
+};
+
+static netlink_generic_decoder_t
+get_genl_decoder(const char *name)
+{
+	unsigned int i;
+
+	for (i = 0; i < ARRAY_SIZE(genl_decoders); i++) {
+		if (strcmp(genl_decoders[i].name, name) == 0) {
+			return genl_decoders[i].decoder;
+		}
+	}
+	return NULL;
+}
+#+end_src
+
+Here's the resulting top-level decoder that uses ~get_genl_decoder()~ to pick the right decoder
+so that it can correctly decode the genetlink family:
+
+#+begin_src C
+bool
+decode_netlink_generic(struct tcb *const tcp,
+		       const struct nlmsghdr *const nlmsghdr,
+		       const kernel_ulong_t addr,
+		       const unsigned int len)
+{
+        struct genlmsghdr genl;
+
+	if (nlmsghdr->nlmsg_type == NLMSG_DONE)
+		return false;
+
+	if (!umove_or_printaddr(tcp, addr, &genl)) {
+		size_t offset =  sizeof(struct genlmsghdr);
+		const unsigned int index = nlmsghdr->nlmsg_type;
+		const struct xlat *families = genl_families_xlat(tcp);
+		const char* name = xlookup(families, index);
+		netlink_generic_decoder_t decoder = get_genl_decoder(name);
+		if (decoder) {
+			decoder(tcp, &genl, addr + offset, len - offset);
+                } else {
+			decode_genl_family(tcp, genl.cmd, genl.version, addr + offset,
+                                           len - offset);
+                }
+        }
+
+	return true;
+}
+#+end_src
+
+And here's the strace output for a ~nlctrl~ response:
+
+#+begin_src sh :results output
+recvmsg(8, {msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base=[{nlmsg_len=192, nlmsg_type=nlctrl, nlmsg_flags=0, nlmsg_seq=1, nlmsg_pid=97132}, {cmd=CTRL_CMD_NEWFAMILY, version=2, [[{nla_len=17, nla_type=CTRL_ATTR_FAMILY_NAME}, "ovs_datapath"], [{nla_len=6, nla_type=CTRL_ATTR_FAMILY_ID}, 35], [{nla_len=8, nla_type=CTRL_ATTR_VERSION}, 2], [{nla_len=8, nla_type=CTRL_ATTR_HDRSIZE}, 4], [{nla_len=8, nla_type=CTRL_ATTR_MAXATTR}, 9], [{nla_len=84, nla_type=CTRL_ATTR_OPS}, [[{nla_len=20, nla_type=0x1}, [[{nla_len=8, nla_type=CTRL_ATTR_OP_ID}, 1], [{nla_len=8, nla_type=CTRL_ATTR_OP_FLAGS}, GENL_CMD_CAP_DO|GENL_CMD_CAP_HASPOL|GENL_UNS_ADMIN_PERM]]], [{nla_len=20, nla_type=0x2}, [[{nla_len=8, nla_type=CTRL_ATTR_OP_ID}, 2], [{nla_len=8, nla_type=CTRL_ATTR_OP_FLAGS}, GENL_CMD_CAP_DO|GENL_CMD_CAP_HASPOL|GENL_UNS_ADMIN_PERM]]], [{nla_len=20, nla_type=0x3}, [[{nla_len=8, nla_type=CTRL_ATTR_OP_ID}, 3], [{nla_len=8, nla_type=CTRL_ATTR_OP_FLAGS}, GENL_CMD_CAP_DO|GENL_CMD_CAP_DUMP|GENL_CMD_CAP_HASPOL]]], [{nla_len=20, nla_type=0x4}, [[{nla_len=8, nla_type=CTRL_ATTR_OP_ID}, 4], [{nla_len=8, nla_type=CTRL_ATTR_OP_FLAGS}, GENL_CMD_CAP_DO|GENL_CMD_CAP_HASPOL|GENL_UNS_ADMIN_PERM]]]]], [{nla_len=36, nla_type=CTRL_ATTR_MCAST_GROUPS}, [{nla_len=32, nla_type=0x1}, [[{nla_len=8, nla_type=CTRL_ATTR_MCAST_GRP_ID}, 10], [{nla_len=17, nla_type=CTRL_ATTR_MCAST_GRP_NAME}, "ovs_datapath"]]]]]}], iov_len=1024}, {iov_base="", iov_len=65536}], msg_iovlen=2, msg_controllen=0, msg_flags=0}, MSG_DONTWAIT) = 192
+#+end_src
+
+** Writing the strace code generator
+
+With that done, I have a good idea of what the code generator needs to produce:
+
++ An ~xlat~ file and decode function for each enum or flags definition.
++ An array of attribute decoders for each attribute set.
++ An ~xlat~ file and decode function for the keys in each attribute set.
++ An ~xlat~ file for the commands in the family.
++ A decode function for the family that can be added to the ~genl_decoders~ array.
+
+The C code generator for ynl is in ~tools/net/ynl/ynl-gen-c.py~. It supports different modes for
+generating UAPI, kernel or user code so I'll just take the simple approach of adding an strace
+mode:
+
+#+begin_src diff
+@@ -2207,6 +2486,10 @@ def main():
+         render_uapi(parsed, cw)
+         return
+ 
++    if args.mode == 'strace':
++        render_strace(parsed, cw)
++        return
++
+     hdr_prot = f"_LINUX_{parsed.name.upper()}_GEN_H"
+     if args.header:
+         cw.p('#ifndef ' + hdr_prot)
+#+end_src
+
+I'll use the infrastructure provided by ~ynl-gen-c.py~ but keep the code in a separate
+~render_strace()~ function. First up is the ~xlat~ files, which I need to generate for
+definitions, attribute sets and commands. Here's a snippet of ~render_strace()~ showing the code
+that generates ~xlat~ content for attribute sets:
+
+#+begin_src python :results output
+def render_strace(family, cw):
+
+    xlat_headers = []
+
+    # xlat for attrs
+
+    for _, attr_set in family.attr_sets.items():
+        if attr_set.subset_of:
+            continue
+
+        xlat_name = c_lower(attr_set.yaml['enum-name'])
+        xlat_headers.append(xlat_name)
+
+        cw.p(f"// For src/xlat/{xlat_name}.in")
+        cw.p('#unconditional')
+        cw.p('#value_indexed')
+
+        for _, attr in attr_set.items():
+            cw.p(attr.enum_name)
+        cw.nl()
+#+end_src
+
+~render_strace(family, cw)~ takes two parameters:
+
++ ~family~ is the schema for the genetlink family
++ ~cw~ is a ~CodeWriter~ that we use to print code to ~stdout~ (or file)
+
+Here I iterate through the attribute sets, ignoring subset definitions, and generate the ~xlat~
+content for each set.
+
+After the ~xlat~ content, I generate the fragments of code that need to be added to existing
+files in the strace sources:
+
+#+begin_src python :results output
+    # Bind into netlink_generic.(c|h)
+
+    cw.p('// Add to src/netlink_generic.h')
+    cw.p(f"extern DECL_NETLINK_GENERIC_DECODER(decode_{family.name}_msg);")
+    cw.nl()
+
+    cw.p('// Add to src/netlink_generic.c in genl_decoders[]')
+    cw.p(f"""\t{{ "{family.name}", decode_{family.name}_msg }},""")
+    cw.nl()
+
+    # strace Makefile
+
+    cw.p('// Add to src/Makefile.am in libstrace_a_SOURCES')
+    cw.p(f"\t{family.name}.c \\")
+    cw.nl()
+#+end_src
+
+There's a one-liner for each of three files:
+
++ An extern function declaration for ~src/netlink_generic.h~
++ An entry for the array of ~genl_decoders[]~ in ~src/netlink_generic.c~
++ An entry for the list of ~libstrace_a_SOURCES~ in ~src/Makefile.am~
+
+With that done, there's just the C source file for this new genetlink family. First up is the
+list of ~#include~ files:
+
+#+begin_src py
+    # Start of C source file
+
+    cw.p(f"// For src/{family.name}.c")
+    cw.nl()
+
+    cw.p('#include "defs.h"')
+    cw.p('#include "netlink.h"')
+    cw.p('#include "nlattr.h"')
+    cw.p('#include <linux/genetlink.h>')
+    cw.p(f"#include <{family['uapi-header']}>")
+    cw.p('#include "netlink_generic.h"')
+    for h in xlat_headers:
+        cw.p(f"#include \"{h}.h\"")
+    cw.nl()
+#+end_src
+
+There are some boiler-plate ~#include~ files followed by the UAPI header for the genetlink
+family and a ~#include~ for each of the ~xlat/*.h~ files that get generated from our ~xlat/*.in~
+files during the ~./bootstrap~ process.
+
+Next comes the meat of the decoder. There are several parts to emit including:
+
++ field decoders for enums, flags and C structs
++ item decoders for nested attribute sets
++ an array of decoders for the attributes in an attribute set
++ the top-level decoder for the family
+
+Here's the code that generates the decoders for flags and enums:
+
+#+begin_src python :results output
+for defn in family['definitions']:
+    if defn['type'] in [ 'flags', 'enum' ]:
+        prefix = defn.get('name-prefix', f"{family.name}-{defn['name']}-")
+
+        cw.p('static bool')
+        cw.p(f"decode_{c_lower(defn['name'])}(struct tcb *const tcp,")
+        cw.p("\t\tconst kernel_ulong_t addr,")
+        cw.p("\t\tconst unsigned int len,")
+        cw.p("\t\tconst void *const opaque_data)")
+        cw.block_start()
+        cw.block_start("static const struct decode_nla_xlat_opts opts =")
+        cw.p(f"""{family.name}_{c_lower(defn['name'])}, "{c_upper(prefix)}???", .size = 4""")
+        cw.block_end(';')
+        decoder = 'xval' if defn['type'] == 'enum' else 'flags'
+        cw.p(f"return decode_nla_{decoder}(tcp, addr, len, &opts);")
+        cw.block_end()
+#+end_src
+
+Here's the code that emits the decoder array for an attribute set, choosing the right decoder
+depending on the type of attribute:
+
+#+begin_src python :results output
+cw.block_start(f"static const nla_decoder_t {c_lower(attr_set.name)}_attr_decoders[] =")
+for _, attr in attr_set.items():
+    if type(attr) in [ TypeUnused, TypeFlag ]:
+        decoder = 'NULL'
+    elif type(attr) == TypeString:
+        decoder = 'decode_nla_str'
+    elif type(attr) == TypeBinary:
+        decoder = 'NULL'
+        if 'struct' in attr.yaml:
+            defn = family.consts[attr.yaml['struct']]
+            enum_name = c_lower(defn.get('enum-name', defn.name))
+            decoder = f"decode_{enum_name}"
+    elif type(attr) == TypeNest:
+        decoder = f"decode_{c_lower(attr.enum_name)}"
+    elif type(attr) == TypeScalar and 'enum' in attr:
+        decoder = f"decode_{c_lower(attr['enum'])}"
+    else:
+        decoder = f"decode_nla_{attr.type}"
+
+    cw.p(f"[{attr.enum_name}] = {decoder},")
+cw.block_end(';')
+cw.nl()
+#+end_src
+
+A useful improvement would be to include "domain-type" hints in the source YAML, to augment the
+~u32~ or whatever storage type, so that appropriate decoders can be selected for IP addresses,
+MAC addresses and other domain specific values.
+
+The last piece of code to generate is the top-level decoder for this genetlink family. Here's
+the code that emits the decoder which needs to print the standard ~genl~ fields as well as any
+fixed header before emitting a call to the ~decode_nlattr()~ function with the previously
+generated attribute array:
+
+#+begin_src python :results output
+for op in family.msgs.values():
+    cmd_prefix = c_upper(family.yaml['operations']['name-prefix'])
+    attr_set_name = op.yaml['attribute-set']
+    attr_set = family.attr_sets[attr_set_name]
+    name_prefix = c_upper(attr_set.yaml.get('name-prefix', attr_set_name))
+    enum_name = c_lower(attr_set.yaml['enum-name'])
+
+    cw.block_start(f"DECL_NETLINK_GENERIC_DECODER(decode_{family.name}_msg)")
+
+    if op.fixed_header:
+        defn = family.consts[op.fixed_header]
+        header_name = c_lower(defn['name'])
+        cw.p(f"struct {header_name} header;")
+        cw.p(f"size_t offset = sizeof(struct {header_name});")
+        cw.nl()
+
+    cw.p('tprint_struct_begin();')
+    cw.p(f"""PRINT_FIELD_XVAL(*genl, cmd, {family.name}_cmds, "{cmd_prefix}???");""");
+    cw.p('tprint_struct_next();')
+    cw.p('PRINT_FIELD_U(*genl, version);')
+    cw.p('tprint_struct_next();')
+
+    if op.fixed_header:
+        cw.p('if (umove_or_printaddr(tcp, addr, &header))')
+        cw.p('return true;')
+        for m in defn.members:
+            cw.p(f"PRINT_FIELD_U(header, {c_lower(m.name)});")
+            cw.p('tprint_struct_next();')
+        cw.nl()
+        cw.p(f"decode_nlattr(tcp, addr + offset, len - offset,");
+    else:
+        cw.p(f"decode_nlattr(tcp, addr, len,");
+
+    cw.p(f"\t{enum_name},");
+    cw.p(f"\t\"{name_prefix}???\",");
+    cw.p(f"\tARRSZ_PAIR({attr_set_name}_attr_decoders),");
+    cw.p("\tNULL);")
+    cw.p('tprint_struct_end();')
+    cw.block_end()
+    break
+#+end_src
+
+The ~ovs_datapath~, ~ovs_vport~ and ~ovs_flow~ specs contain more or less all the properties and
+quirks that a genetlink-legacy spec can contain, so hopefully the resulting generator is fairly
+complete. Things left to do are:
+
++ Tidying up the ~ynl-gen-c.py --mode strace~ code generator so that patches can be pushed
+  upstream to the Linux kernel.
++ Selecting ~nlattr~ decoders for domain specific types such as IP and MAC addresses.
++ Tests. I haven't looked at the strace test framework yet and I don't know how big a task it
+  will be to generate test cases as well.
++ Support for netlink-raw for any raw specs not already hand-written in strace. There isn't
+  netlink-raw support in ynl yet so that will need to come first.
+
+** Generated Output
+
+Here's an example of the strace output for ~ovs_datapath~ which showcases the hard work of the
+code generator:
+
+#+begin_src sh :results output
+recvmsg(9, {msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base=[{nlmsg_len=124, nlmsg_type=ovs_datapath, nlmsg_flags=0, nlmsg_seq=38, nlmsg_pid=669908}, {cmd=OVS_DP_CMD_GET, version=2, dp_ifindex=5, [[{nla_len=9, nla_type=OVS_DP_ATTR_NAME}, "mydp"], [{nla_len=36, nla_type=OVS_DP_ATTR_STATS}, n_hit=0, n_missed=74, n_lost=74, n_flows=0, ], [{nla_len=36, nla_type=OVS_DP_ATTR_MEGAFLOW_STATS}, n_mask_hit=0, n_masks=0, n_cache_hit=0, ], [{nla_len=8, nla_type=OVS_DP_ATTR_USER_FEATURES}, OVS_DP_F_UNALIGNED|OVS_DP_F_TC_RECIRC_SHARING|OVS_DP_F_DISPATCH_UPCALL_PER_CPU], [{nla_len=8, nla_type=OVS_DP_ATTR_MASKS_CACHE_SIZE}, 256]]}], iov_len=1024}, {iov_base="", iov_len=65536}], msg_iovlen=2, msg_controllen=0, msg_flags=0}, MSG_DONTWAIT) = 124
+#+end_src
+
+Here is an example of how to use the strace code generator for the ~ovs_flow~ genetlink family,
+followed by the complete generated output for ~ovs_flow~. I'm glad I didn't have to write that
+by hand.
+
+#+header: :var PYTHON="/Users/donaldh/.py/bin/python"
+#+begin_src sh :results output :wrap src c :dir "/Volumes/opt/net-next"
+$PYTHON ./tools/net/ynl/ynl-gen-c.py \
+    --mode strace \
+    --spec Documentation/netlink/specs/ovs_flow.yaml \
+    --source
+#+end_src
+
+#+RESULTS:
+#+begin_src c
+// SPDX-License-Identifier: ((GPL-2.0 WITH Linux-syscall-note) OR BSD-3-Clause)
+/* Do not edit directly, auto-generated from: */
+/*	Documentation/netlink/specs/ovs_flow.yaml */
+/* YNL-GEN strace source */
+
+// For src/xlat/ovs_flow_ovs_frag_type.in
+#unconditional
+#value_indexed
+OVS_FRAG_TYPE_NONE
+OVS_FRAG_TYPE_FIRST
+OVS_FRAG_TYPE_LATER
+OVS_FRAG_TYPE_ANY
+
+// For src/xlat/ovs_flow_ovs_ufid_flags.in
+#unconditional
+OVS_UFID_F_OMIT_KEY
+OVS_UFID_F_OMIT_MASK
+OVS_UFID_F_OMIT_ACTIONS
+
+// For src/xlat/ovs_flow_ovs_hash_alg.in
+#unconditional
+#value_indexed
+OVS_FLOW_OVS_HASH_ALG_OVS_HASH_ALG_L4
+
+// For src/xlat/ovs_flow_ct_state_flags.in
+#unconditional
+OVS_CS_F_NEW
+vOVS_CS_F_ESTABLISHED
+OVS_CS_F_RELATED
+OVS_CS_F_REPLY_DIR
+OVS_CS_F_INVALID
+OVS_CS_F_TRACKED
+OVS_CS_F_SRC_NAT
+OVS_CS_F_DST_NAT
+
+// For src/xlat/ovs_flow_attr.in
+#unconditional
+#value_indexed
+OVS_FLOW_ATTR_KEY
+OVS_FLOW_ATTR_ACTIONS
+OVS_FLOW_ATTR_STATS
+OVS_FLOW_ATTR_TCP_FLAGS
+OVS_FLOW_ATTR_USED
+OVS_FLOW_ATTR_CLEAR
+OVS_FLOW_ATTR_MASK
+OVS_FLOW_ATTR_PROBE
+OVS_FLOW_ATTR_UFID
+OVS_FLOW_ATTR_UFID_FLAGS
+OVS_FLOW_ATTR_PAD
+
+// For src/xlat/ovs_key_attr.in
+#unconditional
+#value_indexed
+OVS_KEY_ATTR_ENCAP
+OVS_KEY_ATTR_PRIORITY
+OVS_KEY_ATTR_IN_PORT
+OVS_KEY_ATTR_ETHERNET
+OVS_KEY_ATTR_VLAN
+OVS_KEY_ATTR_ETHERTYPE
+OVS_KEY_ATTR_IPV4
+OVS_KEY_ATTR_IPV6
+OVS_KEY_ATTR_TCP
+OVS_KEY_ATTR_UDP
+OVS_KEY_ATTR_ICMP
+OVS_KEY_ATTR_ICMPV6
+OVS_KEY_ATTR_ARP
+OVS_KEY_ATTR_ND
+OVS_KEY_ATTR_SKB_MARK
+OVS_KEY_ATTR_TUNNEL
+OVS_KEY_ATTR_SCTP
+OVS_KEY_ATTR_TCP_FLAGS
+OVS_KEY_ATTR_DP_HASH
+OVS_KEY_ATTR_RECIRC_ID
+OVS_KEY_ATTR_MPLS
+OVS_KEY_ATTR_CT_STATE
+OVS_KEY_ATTR_CT_ZONE
+OVS_KEY_ATTR_CT_MARK
+OVS_KEY_ATTR_CT_LABELS
+OVS_KEY_ATTR_CT_ORIG_TUPLE_IPV4
+OVS_KEY_ATTR_CT_ORIG_TUPLE_IPV6
+OVS_KEY_ATTR_NSH
+OVS_KEY_ATTR_PACKET_TYPE
+OVS_KEY_ATTR_ND_EXTENSIONS
+OVS_KEY_ATTR_TUNNEL_INFO
+OVS_KEY_ATTR_IPV6_EXTHDRS
+
+// For src/xlat/ovs_action_attr.in
+#unconditional
+#value_indexed
+OVS_ACTION_ATTR_OUTPUT
+OVS_ACTION_ATTR_USERSPACE
+OVS_ACTION_ATTR_SET
+OVS_ACTION_ATTR_PUSH_VLAN
+OVS_ACTION_ATTR_POP_VLAN
+OVS_ACTION_ATTR_SAMPLE
+OVS_ACTION_ATTR_RECIRC
+OVS_ACTION_ATTR_HASH
+OVS_ACTION_ATTR_PUSH_MPLS
+OVS_ACTION_ATTR_POP_MPLS
+OVS_ACTION_ATTR_SET_MASKED
+OVS_ACTION_ATTR_CT
+OVS_ACTION_ATTR_TRUNC
+OVS_ACTION_ATTR_PUSH_ETH
+OVS_ACTION_ATTR_POP_ETH
+OVS_ACTION_ATTR_CT_CLEAR
+OVS_ACTION_ATTR_PUSH_NSH
+OVS_ACTION_ATTR_POP_NSH
+OVS_ACTION_ATTR_METER
+OVS_ACTION_ATTR_CLONE
+OVS_ACTION_ATTR_CHECK_PKT_LEN
+OVS_ACTION_ATTR_ADD_MPLS
+OVS_ACTION_ATTR_DEC_TTL
+
+// For src/xlat/ovs_tunnel_key_attr.in
+#unconditional
+#value_indexed
+OVS_TUNNEL_KEY_ATTR_ID
+OVS_TUNNEL_KEY_ATTR_IPV4_SRC
+OVS_TUNNEL_KEY_ATTR_IPV4_DST
+OVS_TUNNEL_KEY_ATTR_TOS
+OVS_TUNNEL_KEY_ATTR_TTL
+OVS_TUNNEL_KEY_ATTR_DONT_FRAGMENT
+OVS_TUNNEL_KEY_ATTR_CSUM
+OVS_TUNNEL_KEY_ATTR_OAM
+OVS_TUNNEL_KEY_ATTR_GENEVE_OPTS
+OVS_TUNNEL_KEY_ATTR_TP_SRC
+OVS_TUNNEL_KEY_ATTR_TP_DST
+OVS_TUNNEL_KEY_ATTR_VXLAN_OPTS
+OVS_TUNNEL_KEY_ATTR_IPV6_SRC
+OVS_TUNNEL_KEY_ATTR_IPV6_DST
+OVS_TUNNEL_KEY_ATTR_PAD
+OVS_TUNNEL_KEY_ATTR_ERSPAN_OPTS
+OVS_TUNNEL_KEY_ATTR_IPV4_INFO_BRIDGE
+
+// For src/xlat/ovs_check_pkt_len_attr.in
+#unconditional
+#value_indexed
+OVS_CHECK_PKT_LEN_ATTR_PKT_LEN
+OVS_CHECK_PKT_LEN_ATTR_ACTIONS_IF_GREATER
+OVS_CHECK_PKT_LEN_ATTR_ACTIONS_IF_LESS_EQUAL
+
+// For src/xlat/ovs_sample_attr.in
+#unconditional
+#value_indexed
+OVS_SAMPLE_ATTR_PROBABILITY
+OVS_SAMPLE_ATTR_ACTIONS
+
+// For src/xlat/ovs_userspace_attr.in
+#unconditional
+#value_indexed
+OVS_USERSPACE_ATTR_PID
+OVS_USERSPACE_ATTR_USERDATA
+OVS_USERSPACE_ATTR_EGRESS_TUN_PORT
+OVS_USERSPACE_ATTR_ACTIONS
+
+// For src/xlat/ovs_nsh_key_attr.in
+#unconditional
+#value_indexed
+OVS_NSH_KEY_ATTR_BASE
+OVS_NSH_KEY_ATTR_MD1
+OVS_NSH_KEY_ATTR_MD2
+
+// For src/xlat/ovs_ct_attr.in
+#unconditional
+#value_indexed
+OVS_CT_ATTR_COMMIT
+OVS_CT_ATTR_ZONE
+OVS_CT_ATTR_MARK
+OVS_CT_ATTR_LABELS
+OVS_CT_ATTR_HELPER
+OVS_CT_ATTR_NAT
+OVS_CT_ATTR_FORCE_COMMIT
+OVS_CT_ATTR_EVENTMASK
+OVS_CT_ATTR_TIMEOUT
+
+// For src/xlat/ovs_nat_attr.in
+#unconditional
+#value_indexed
+OVS_NAT_ATTR_SRC
+OVS_NAT_ATTR_DST
+OVS_NAT_ATTR_IP_MIN
+OVS_NAT_ATTR_IP_MAX
+OVS_NAT_ATTR_PROTO_MIN
+OVS_NAT_ATTR_PROTO_MAX
+OVS_NAT_ATTR_PERSISTENT
+OVS_NAT_ATTR_PROTO_HASH
+OVS_NAT_ATTR_PROTO_RANDOM
+
+// For src/xlat/ovs_dec_ttl_attr.in
+#unconditional
+#value_indexed
+OVS_DEC_TTL_ATTR_ACTION
+
+// For src/xlat/ovs_vlan_ext_attr.in
+#unconditional
+#value_indexed
+OVS_VLAN_EXT_ATTR_GBP
+
+// For src/xlat/ovs_flow_cmds.in
+#unconditional
+#value_indexed
+OVS_FLOW_CMD_GET
+OVS_FLOW_CMD_NEW
+
+// Add to src/netlink_generic.h
+extern DECL_NETLINK_GENERIC_DECODER(decode_ovs_flow_msg);
+
+// Add to src/netlink_generic.c in genl_decoders[]
+	{ "ovs_flow", decode_ovs_flow_msg },
+
+// Add to src/Makefile.am in libstrace_a_SOURCES
+	ovs_flow.c \
+
+// For src/ovs_flow.c
+
+#include "defs.h"
+#include "netlink.h"
+#include "nlattr.h"
+#include <linux/genetlink.h>
+#include <linux/openvswitch.h>
+#include "netlink_generic.h"
+#include "ovs_flow_ovs_frag_type.h"
+#include "ovs_flow_ovs_ufid_flags.h"
+#include "ovs_flow_ovs_hash_alg.h"
+#include "ovs_flow_ct_state_flags.h"
+#include "ovs_flow_attr.h"
+#include "ovs_key_attr.h"
+#include "ovs_action_attr.h"
+#include "ovs_tunnel_key_attr.h"
+#include "ovs_check_pkt_len_attr.h"
+#include "ovs_sample_attr.h"
+#include "ovs_userspace_attr.h"
+#include "ovs_nsh_key_attr.h"
+#include "ovs_ct_attr.h"
+#include "ovs_nat_attr.h"
+#include "ovs_dec_ttl_attr.h"
+#include "ovs_vlan_ext_attr.h"
+#include "ovs_flow_cmds.h"
+
+static bool
+decode_ovs_header(struct tcb *const tcp,
+		const kernel_ulong_t addr,
+		const unsigned int len,
+		const void *const opaque_data)
+{
+	struct ovs_header ovs_header;
+	umove_or_printaddr(tcp, addr, &ovs_header);
+
+	PRINT_FIELD_U(ovs_header, dp_ifindex);
+	tprint_struct_next();
+	return true;
+}
+
+static bool
+decode_ovs_flow_stats(struct tcb *const tcp,
+		const kernel_ulong_t addr,
+		const unsigned int len,
+		const void *const opaque_data)
+{
+	struct ovs_flow_stats ovs_flow_stats;
+	umove_or_printaddr(tcp, addr, &ovs_flow_stats);
+
+	PRINT_FIELD_U(ovs_flow_stats, n_packets);
+	tprint_struct_next();
+	PRINT_FIELD_U(ovs_flow_stats, n_bytes);
+	tprint_struct_next();
+	return true;
+}
+
+static bool
+decode_ovs_key_mpls(struct tcb *const tcp,
+		const kernel_ulong_t addr,
+		const unsigned int len,
+		const void *const opaque_data)
+{
+	struct ovs_key_mpls ovs_key_mpls;
+	umove_or_printaddr(tcp, addr, &ovs_key_mpls);
+
+	PRINT_FIELD_U(ovs_key_mpls, mpls_lse);
+	tprint_struct_next();
+	return true;
+}
+
+static bool
+decode_ovs_key_ipv4(struct tcb *const tcp,
+		const kernel_ulong_t addr,
+		const unsigned int len,
+		const void *const opaque_data)
+{
+	struct ovs_key_ipv4 ovs_key_ipv4;
+	umove_or_printaddr(tcp, addr, &ovs_key_ipv4);
+
+	PRINT_FIELD_U(ovs_key_ipv4, ipv4_src);
+	tprint_struct_next();
+	PRINT_FIELD_U(ovs_key_ipv4, ipv4_dst);
+	tprint_struct_next();
+	PRINT_FIELD_U(ovs_key_ipv4, ipv4_proto);
+	tprint_struct_next();
+	PRINT_FIELD_U(ovs_key_ipv4, ipv4_tos);
+	tprint_struct_next();
+	PRINT_FIELD_U(ovs_key_ipv4, ipv4_ttl);
+	tprint_struct_next();
+	PRINT_FIELD_U(ovs_key_ipv4, ipv4_frag);
+	tprint_struct_next();
+	return true;
+}
+
+static bool
+decode_ovs_frag_type(struct tcb *const tcp,
+		const kernel_ulong_t addr,
+		const unsigned int len,
+		const void *const opaque_data)
+{
+	static const struct decode_nla_xlat_opts opts = {
+		ovs_flow_ovs_frag_type, "OVS_FRAG_TYPE_???", .size = 4
+	};
+	return decode_nla_xval(tcp, addr, len, &opts);
+}
+
+static bool
+decode_ovs_key_tcp(struct tcb *const tcp,
+		const kernel_ulong_t addr,
+		const unsigned int len,
+		const void *const opaque_data)
+{
+	struct ovs_key_tcp ovs_key_tcp;
+	umove_or_printaddr(tcp, addr, &ovs_key_tcp);
+
+	PRINT_FIELD_U(ovs_key_tcp, tcp_src);
+	tprint_struct_next();
+	PRINT_FIELD_U(ovs_key_tcp, tcp_dst);
+	tprint_struct_next();
+	return true;
+}
+
+static bool
+decode_ovs_key_udp(struct tcb *const tcp,
+		const kernel_ulong_t addr,
+		const unsigned int len,
+		const void *const opaque_data)
+{
+	struct ovs_key_udp ovs_key_udp;
+	umove_or_printaddr(tcp, addr, &ovs_key_udp);
+
+	PRINT_FIELD_U(ovs_key_udp, udp_src);
+	tprint_struct_next();
+	PRINT_FIELD_U(ovs_key_udp, udp_dst);
+	tprint_struct_next();
+	return true;
+}
+
+static bool
+decode_ovs_key_sctp(struct tcb *const tcp,
+		const kernel_ulong_t addr,
+		const unsigned int len,
+		const void *const opaque_data)
+{
+	struct ovs_key_sctp ovs_key_sctp;
+	umove_or_printaddr(tcp, addr, &ovs_key_sctp);
+
+	PRINT_FIELD_U(ovs_key_sctp, sctp_src);
+	tprint_struct_next();
+	PRINT_FIELD_U(ovs_key_sctp, sctp_dst);
+	tprint_struct_next();
+	return true;
+}
+
+static bool
+decode_ovs_key_icmp(struct tcb *const tcp,
+		const kernel_ulong_t addr,
+		const unsigned int len,
+		const void *const opaque_data)
+{
+	struct ovs_key_icmp ovs_key_icmp;
+	umove_or_printaddr(tcp, addr, &ovs_key_icmp);
+
+	PRINT_FIELD_U(ovs_key_icmp, icmp_type);
+	tprint_struct_next();
+	PRINT_FIELD_U(ovs_key_icmp, icmp_code);
+	tprint_struct_next();
+	return true;
+}
+
+static bool
+decode_ovs_key_ct_tuple_ipv4(struct tcb *const tcp,
+		const kernel_ulong_t addr,
+		const unsigned int len,
+		const void *const opaque_data)
+{
+	struct ovs_key_ct_tuple_ipv4 ovs_key_ct_tuple_ipv4;
+	umove_or_printaddr(tcp, addr, &ovs_key_ct_tuple_ipv4);
+
+	PRINT_FIELD_U(ovs_key_ct_tuple_ipv4, ipv4_src);
+	tprint_struct_next();
+	PRINT_FIELD_U(ovs_key_ct_tuple_ipv4, ipv4_dst);
+	tprint_struct_next();
+	PRINT_FIELD_U(ovs_key_ct_tuple_ipv4, src_port);
+	tprint_struct_next();
+	PRINT_FIELD_U(ovs_key_ct_tuple_ipv4, dst_port);
+	tprint_struct_next();
+	PRINT_FIELD_U(ovs_key_ct_tuple_ipv4, ipv4_proto);
+	tprint_struct_next();
+	return true;
+}
+
+static bool
+decode_ovs_action_push_vlan(struct tcb *const tcp,
+		const kernel_ulong_t addr,
+		const unsigned int len,
+		const void *const opaque_data)
+{
+	struct ovs_action_push_vlan ovs_action_push_vlan;
+	umove_or_printaddr(tcp, addr, &ovs_action_push_vlan);
+
+	PRINT_FIELD_U(ovs_action_push_vlan, vlan_tpid);
+	tprint_struct_next();
+	PRINT_FIELD_U(ovs_action_push_vlan, vlan_tci);
+	tprint_struct_next();
+	return true;
+}
+
+static bool
+decode_ovs_ufid_flags(struct tcb *const tcp,
+		const kernel_ulong_t addr,
+		const unsigned int len,
+		const void *const opaque_data)
+{
+	static const struct decode_nla_xlat_opts opts = {
+		ovs_flow_ovs_ufid_flags, "OVS_UFID_F_???", .size = 4
+	};
+	return decode_nla_flags(tcp, addr, len, &opts);
+}
+
+static bool
+decode_ovs_action_hash(struct tcb *const tcp,
+		const kernel_ulong_t addr,
+		const unsigned int len,
+		const void *const opaque_data)
+{
+	struct ovs_action_hash ovs_action_hash;
+	umove_or_printaddr(tcp, addr, &ovs_action_hash);
+
+	PRINT_FIELD_U(ovs_action_hash, hash_algorithm);
+	tprint_struct_next();
+	PRINT_FIELD_U(ovs_action_hash, hash_basis);
+	tprint_struct_next();
+	return true;
+}
+
+static bool
+decode_ovs_hash_alg(struct tcb *const tcp,
+		const kernel_ulong_t addr,
+		const unsigned int len,
+		const void *const opaque_data)
+{
+	static const struct decode_nla_xlat_opts opts = {
+		ovs_flow_ovs_hash_alg, "OVS_FLOW_OVS_HASH_ALG_???", .size = 4
+	};
+	return decode_nla_xval(tcp, addr, len, &opts);
+}
+
+static bool
+decode_ovs_action_push_mpls(struct tcb *const tcp,
+		const kernel_ulong_t addr,
+		const unsigned int len,
+		const void *const opaque_data)
+{
+	struct ovs_action_push_mpls ovs_action_push_mpls;
+	umove_or_printaddr(tcp, addr, &ovs_action_push_mpls);
+
+	PRINT_FIELD_U(ovs_action_push_mpls, lse);
+	tprint_struct_next();
+	PRINT_FIELD_U(ovs_action_push_mpls, ethertype);
+	tprint_struct_next();
+	return true;
+}
+
+static bool
+decode_ovs_action_add_mpls(struct tcb *const tcp,
+		const kernel_ulong_t addr,
+		const unsigned int len,
+		const void *const opaque_data)
+{
+	struct ovs_action_add_mpls ovs_action_add_mpls;
+	umove_or_printaddr(tcp, addr, &ovs_action_add_mpls);
+
+	PRINT_FIELD_U(ovs_action_add_mpls, lse);
+	tprint_struct_next();
+	PRINT_FIELD_U(ovs_action_add_mpls, ethertype);
+	tprint_struct_next();
+	PRINT_FIELD_U(ovs_action_add_mpls, tun_flags);
+	tprint_struct_next();
+	return true;
+}
+
+static bool
+decode_ct_state_flags(struct tcb *const tcp,
+		const kernel_ulong_t addr,
+		const unsigned int len,
+		const void *const opaque_data)
+{
+	static const struct decode_nla_xlat_opts opts = {
+		ovs_flow_ct_state_flags, "OVS_CS_F_???", .size = 4
+	};
+	return decode_nla_flags(tcp, addr, len, &opts);
+}
+
+static bool
+decode_ovs_flow_attr_key_item(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	decode_nlattr(tcp, addr, len, ovs_key_attr,
+		"OVS_KEY_ATTR_???",
+	ARRSZ_PAIR(key_attrs_attr_decoders),
+		NULL);
+	return true;
+}
+
+static bool
+decode_ovs_flow_attr_key(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	nla_decoder_t decoder = &decode_ovs_flow_attr_key_item;
+	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
+	return true;
+}
+
+static bool
+decode_ovs_flow_attr_actions_item(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	decode_nlattr(tcp, addr, len, ovs_action_attr,
+		"OVS_ACTION_ATTR_???",
+	ARRSZ_PAIR(action_attrs_attr_decoders),
+		NULL);
+	return true;
+}
+
+static bool
+decode_ovs_flow_attr_actions(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	nla_decoder_t decoder = &decode_ovs_flow_attr_actions_item;
+	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
+	return true;
+}
+
+static bool
+decode_ovs_flow_attr_mask_item(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	decode_nlattr(tcp, addr, len, ovs_key_attr,
+		"OVS_KEY_ATTR_???",
+	ARRSZ_PAIR(key_attrs_attr_decoders),
+		NULL);
+	return true;
+}
+
+static bool
+decode_ovs_flow_attr_mask(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	nla_decoder_t decoder = &decode_ovs_flow_attr_mask_item;
+	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
+	return true;
+}
+
+static const nla_decoder_t flow_attrs_attr_decoders[] = {
+	[OVS_FLOW_ATTR_KEY] = decode_ovs_flow_attr_key,
+	[OVS_FLOW_ATTR_ACTIONS] = decode_ovs_flow_attr_actions,
+	[OVS_FLOW_ATTR_STATS] = decode_ovs_flow_stats,
+	[OVS_FLOW_ATTR_TCP_FLAGS] = decode_nla_u8,
+	[OVS_FLOW_ATTR_USED] = decode_nla_u64,
+	[OVS_FLOW_ATTR_CLEAR] = NULL,
+	[OVS_FLOW_ATTR_MASK] = decode_ovs_flow_attr_mask,
+	[OVS_FLOW_ATTR_PROBE] = NULL,
+	[OVS_FLOW_ATTR_UFID] = NULL,
+	[OVS_FLOW_ATTR_UFID_FLAGS] = decode_ovs_ufid_flags,
+	[OVS_FLOW_ATTR_PAD] = NULL,
+};
+
+static bool
+decode_ovs_key_attr_encap_item(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	decode_nlattr(tcp, addr, len, ovs_key_attr,
+		"OVS_KEY_ATTR_???",
+	ARRSZ_PAIR(key_attrs_attr_decoders),
+		NULL);
+	return true;
+}
+
+static bool
+decode_ovs_key_attr_encap(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	nla_decoder_t decoder = &decode_ovs_key_attr_encap_item;
+	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
+	return true;
+}
+
+static bool
+decode_ovs_key_attr_tunnel_item(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	decode_nlattr(tcp, addr, len, ovs_tunnel_key_attr,
+		"OVS_TUNNEL_KEY_ATTR_???",
+	ARRSZ_PAIR(tunnel_key_attrs_attr_decoders),
+		NULL);
+	return true;
+}
+
+static bool
+decode_ovs_key_attr_tunnel(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	nla_decoder_t decoder = &decode_ovs_key_attr_tunnel_item;
+	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
+	return true;
+}
+
+static bool
+decode_ovs_key_attr_nsh_item(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	decode_nlattr(tcp, addr, len, ovs_nsh_key_attr,
+		"OVS_NSH_KEY_ATTR_???",
+	ARRSZ_PAIR(ovs_nsh_key_attrs_attr_decoders),
+		NULL);
+	return true;
+}
+
+static bool
+decode_ovs_key_attr_nsh(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	nla_decoder_t decoder = &decode_ovs_key_attr_nsh_item;
+	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
+	return true;
+}
+
+static const nla_decoder_t key_attrs_attr_decoders[] = {
+	[OVS_KEY_ATTR_ENCAP] = decode_ovs_key_attr_encap,
+	[OVS_KEY_ATTR_PRIORITY] = decode_nla_u32,
+	[OVS_KEY_ATTR_IN_PORT] = decode_nla_u32,
+	[OVS_KEY_ATTR_ETHERNET] = NULL,
+	[OVS_KEY_ATTR_VLAN] = decode_nla_u16,
+	[OVS_KEY_ATTR_ETHERTYPE] = decode_nla_u16,
+	[OVS_KEY_ATTR_IPV4] = decode_ovs_key_ipv4,
+	[OVS_KEY_ATTR_IPV6] = NULL,
+	[OVS_KEY_ATTR_TCP] = decode_ovs_key_tcp,
+	[OVS_KEY_ATTR_UDP] = decode_ovs_key_udp,
+	[OVS_KEY_ATTR_ICMP] = decode_ovs_key_icmp,
+	[OVS_KEY_ATTR_ICMPV6] = decode_ovs_key_icmp,
+	[OVS_KEY_ATTR_ARP] = NULL,
+	[OVS_KEY_ATTR_ND] = NULL,
+	[OVS_KEY_ATTR_SKB_MARK] = decode_nla_u32,
+	[OVS_KEY_ATTR_TUNNEL] = decode_ovs_key_attr_tunnel,
+	[OVS_KEY_ATTR_SCTP] = decode_ovs_key_sctp,
+	[OVS_KEY_ATTR_TCP_FLAGS] = decode_nla_u16,
+	[OVS_KEY_ATTR_DP_HASH] = decode_nla_u32,
+	[OVS_KEY_ATTR_RECIRC_ID] = decode_nla_u32,
+	[OVS_KEY_ATTR_MPLS] = decode_ovs_key_mpls,
+	[OVS_KEY_ATTR_CT_STATE] = decode_ct_state_flags,
+	[OVS_KEY_ATTR_CT_ZONE] = decode_nla_u16,
+	[OVS_KEY_ATTR_CT_MARK] = decode_nla_u32,
+	[OVS_KEY_ATTR_CT_LABELS] = NULL,
+	[OVS_KEY_ATTR_CT_ORIG_TUPLE_IPV4] = decode_ovs_key_ct_tuple_ipv4,
+	[OVS_KEY_ATTR_CT_ORIG_TUPLE_IPV6] = NULL,
+	[OVS_KEY_ATTR_NSH] = decode_ovs_key_attr_nsh,
+	[OVS_KEY_ATTR_PACKET_TYPE] = decode_nla_u32,
+	[OVS_KEY_ATTR_ND_EXTENSIONS] = NULL,
+	[OVS_KEY_ATTR_TUNNEL_INFO] = NULL,
+	[OVS_KEY_ATTR_IPV6_EXTHDRS] = NULL,
+};
+
+static bool
+decode_ovs_action_attr_userspace_item(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	decode_nlattr(tcp, addr, len, ovs_userspace_attr,
+		"OVS_USERSPACE_ATTR_???",
+	ARRSZ_PAIR(userspace_attrs_attr_decoders),
+		NULL);
+	return true;
+}
+
+static bool
+decode_ovs_action_attr_userspace(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	nla_decoder_t decoder = &decode_ovs_action_attr_userspace_item;
+	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
+	return true;
+}
+
+static bool
+decode_ovs_action_attr_set_item(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	decode_nlattr(tcp, addr, len, ovs_key_attr,
+		"OVS_KEY_ATTR_???",
+	ARRSZ_PAIR(key_attrs_attr_decoders),
+		NULL);
+	return true;
+}
+
+static bool
+decode_ovs_action_attr_set(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	nla_decoder_t decoder = &decode_ovs_action_attr_set_item;
+	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
+	return true;
+}
+
+static bool
+decode_ovs_action_attr_sample_item(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	decode_nlattr(tcp, addr, len, ovs_sample_attr,
+		"OVS_SAMPLE_ATTR_???",
+	ARRSZ_PAIR(sample_attrs_attr_decoders),
+		NULL);
+	return true;
+}
+
+static bool
+decode_ovs_action_attr_sample(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	nla_decoder_t decoder = &decode_ovs_action_attr_sample_item;
+	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
+	return true;
+}
+
+static bool
+decode_ovs_action_attr_set_masked_item(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	decode_nlattr(tcp, addr, len, ovs_key_attr,
+		"OVS_KEY_ATTR_???",
+	ARRSZ_PAIR(key_attrs_attr_decoders),
+		NULL);
+	return true;
+}
+
+static bool
+decode_ovs_action_attr_set_masked(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	nla_decoder_t decoder = &decode_ovs_action_attr_set_masked_item;
+	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
+	return true;
+}
+
+static bool
+decode_ovs_action_attr_ct_item(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	decode_nlattr(tcp, addr, len, ovs_ct_attr,
+		"OVS_CT_ATTR_???",
+	ARRSZ_PAIR(ct_attrs_attr_decoders),
+		NULL);
+	return true;
+}
+
+static bool
+decode_ovs_action_attr_ct(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	nla_decoder_t decoder = &decode_ovs_action_attr_ct_item;
+	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
+	return true;
+}
+
+static bool
+decode_ovs_action_attr_push_nsh_item(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	decode_nlattr(tcp, addr, len, ovs_nsh_key_attr,
+		"OVS_NSH_KEY_ATTR_???",
+	ARRSZ_PAIR(ovs_nsh_key_attrs_attr_decoders),
+		NULL);
+	return true;
+}
+
+static bool
+decode_ovs_action_attr_push_nsh(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	nla_decoder_t decoder = &decode_ovs_action_attr_push_nsh_item;
+	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
+	return true;
+}
+
+static bool
+decode_ovs_action_attr_clone_item(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	decode_nlattr(tcp, addr, len, ovs_action_attr,
+		"OVS_ACTION_ATTR_???",
+	ARRSZ_PAIR(action_attrs_attr_decoders),
+		NULL);
+	return true;
+}
+
+static bool
+decode_ovs_action_attr_clone(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	nla_decoder_t decoder = &decode_ovs_action_attr_clone_item;
+	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
+	return true;
+}
+
+static bool
+decode_ovs_action_attr_check_pkt_len_item(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	decode_nlattr(tcp, addr, len, ovs_check_pkt_len_attr,
+		"OVS_CHECK_PKT_LEN_ATTR_???",
+	ARRSZ_PAIR(check_pkt_len_attrs_attr_decoders),
+		NULL);
+	return true;
+}
+
+static bool
+decode_ovs_action_attr_check_pkt_len(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	nla_decoder_t decoder = &decode_ovs_action_attr_check_pkt_len_item;
+	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
+	return true;
+}
+
+static bool
+decode_ovs_action_attr_dec_ttl_item(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	decode_nlattr(tcp, addr, len, ovs_dec_ttl_attr,
+		"OVS_DEC_TTL_ATTR_???",
+	ARRSZ_PAIR(dec_ttl_attrs_attr_decoders),
+		NULL);
+	return true;
+}
+
+static bool
+decode_ovs_action_attr_dec_ttl(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	nla_decoder_t decoder = &decode_ovs_action_attr_dec_ttl_item;
+	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
+	return true;
+}
+
+static const nla_decoder_t action_attrs_attr_decoders[] = {
+	[OVS_ACTION_ATTR_OUTPUT] = decode_nla_u32,
+	[OVS_ACTION_ATTR_USERSPACE] = decode_ovs_action_attr_userspace,
+	[OVS_ACTION_ATTR_SET] = decode_ovs_action_attr_set,
+	[OVS_ACTION_ATTR_PUSH_VLAN] = decode_ovs_action_push_vlan,
+	[OVS_ACTION_ATTR_POP_VLAN] = NULL,
+	[OVS_ACTION_ATTR_SAMPLE] = decode_ovs_action_attr_sample,
+	[OVS_ACTION_ATTR_RECIRC] = decode_nla_u32,
+	[OVS_ACTION_ATTR_HASH] = decode_ovs_action_hash,
+	[OVS_ACTION_ATTR_PUSH_MPLS] = decode_ovs_action_push_mpls,
+	[OVS_ACTION_ATTR_POP_MPLS] = decode_nla_u16,
+	[OVS_ACTION_ATTR_SET_MASKED] = decode_ovs_action_attr_set_masked,
+	[OVS_ACTION_ATTR_CT] = decode_ovs_action_attr_ct,
+	[OVS_ACTION_ATTR_TRUNC] = decode_nla_u32,
+	[OVS_ACTION_ATTR_PUSH_ETH] = NULL,
+	[OVS_ACTION_ATTR_POP_ETH] = NULL,
+	[OVS_ACTION_ATTR_CT_CLEAR] = NULL,
+	[OVS_ACTION_ATTR_PUSH_NSH] = decode_ovs_action_attr_push_nsh,
+	[OVS_ACTION_ATTR_POP_NSH] = NULL,
+	[OVS_ACTION_ATTR_METER] = decode_nla_u32,
+	[OVS_ACTION_ATTR_CLONE] = decode_ovs_action_attr_clone,
+	[OVS_ACTION_ATTR_CHECK_PKT_LEN] = decode_ovs_action_attr_check_pkt_len,
+	[OVS_ACTION_ATTR_ADD_MPLS] = decode_ovs_action_add_mpls,
+	[OVS_ACTION_ATTR_DEC_TTL] = decode_ovs_action_attr_dec_ttl,
+};
+
+static bool
+decode_ovs_tunnel_key_attr_vxlan_opts_item(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	decode_nlattr(tcp, addr, len, ovs_vlan_ext_attr,
+		"OVS_VLAN_EXT_ATTR_???",
+	ARRSZ_PAIR(vxlan_ext_attrs_attr_decoders),
+		NULL);
+	return true;
+}
+
+static bool
+decode_ovs_tunnel_key_attr_vxlan_opts(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	nla_decoder_t decoder = &decode_ovs_tunnel_key_attr_vxlan_opts_item;
+	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
+	return true;
+}
+
+static const nla_decoder_t tunnel_key_attrs_attr_decoders[] = {
+	[OVS_TUNNEL_KEY_ATTR_ID] = decode_nla_u64,
+	[OVS_TUNNEL_KEY_ATTR_IPV4_SRC] = decode_nla_u32,
+	[OVS_TUNNEL_KEY_ATTR_IPV4_DST] = decode_nla_u32,
+	[OVS_TUNNEL_KEY_ATTR_TOS] = decode_nla_u8,
+	[OVS_TUNNEL_KEY_ATTR_TTL] = decode_nla_u8,
+	[OVS_TUNNEL_KEY_ATTR_DONT_FRAGMENT] = NULL,
+	[OVS_TUNNEL_KEY_ATTR_CSUM] = NULL,
+	[OVS_TUNNEL_KEY_ATTR_OAM] = NULL,
+	[OVS_TUNNEL_KEY_ATTR_GENEVE_OPTS] = NULL,
+	[OVS_TUNNEL_KEY_ATTR_TP_SRC] = decode_nla_u16,
+	[OVS_TUNNEL_KEY_ATTR_TP_DST] = decode_nla_u16,
+	[OVS_TUNNEL_KEY_ATTR_VXLAN_OPTS] = decode_ovs_tunnel_key_attr_vxlan_opts,
+	[OVS_TUNNEL_KEY_ATTR_IPV6_SRC] = NULL,
+	[OVS_TUNNEL_KEY_ATTR_IPV6_DST] = NULL,
+	[OVS_TUNNEL_KEY_ATTR_PAD] = NULL,
+	[OVS_TUNNEL_KEY_ATTR_ERSPAN_OPTS] = NULL,
+	[OVS_TUNNEL_KEY_ATTR_IPV4_INFO_BRIDGE] = NULL,
+};
+
+static bool
+decode_ovs_check_pkt_len_attr_actions_if_greater_item(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	decode_nlattr(tcp, addr, len, ovs_action_attr,
+		"OVS_ACTION_ATTR_???",
+	ARRSZ_PAIR(action_attrs_attr_decoders),
+		NULL);
+	return true;
+}
+
+static bool
+decode_ovs_check_pkt_len_attr_actions_if_greater(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	nla_decoder_t decoder = &decode_ovs_check_pkt_len_attr_actions_if_greater_item;
+	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
+	return true;
+}
+
+static bool
+decode_ovs_check_pkt_len_attr_actions_if_less_equal_item(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	decode_nlattr(tcp, addr, len, ovs_action_attr,
+		"OVS_ACTION_ATTR_???",
+	ARRSZ_PAIR(action_attrs_attr_decoders),
+		NULL);
+	return true;
+}
+
+static bool
+decode_ovs_check_pkt_len_attr_actions_if_less_equal(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	nla_decoder_t decoder = &decode_ovs_check_pkt_len_attr_actions_if_less_equal_item;
+	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
+	return true;
+}
+
+static const nla_decoder_t check_pkt_len_attrs_attr_decoders[] = {
+	[OVS_CHECK_PKT_LEN_ATTR_PKT_LEN] = decode_nla_u16,
+	[OVS_CHECK_PKT_LEN_ATTR_ACTIONS_IF_GREATER] = decode_ovs_check_pkt_len_attr_actions_if_greater,
+	[OVS_CHECK_PKT_LEN_ATTR_ACTIONS_IF_LESS_EQUAL] = decode_ovs_check_pkt_len_attr_actions_if_less_equal,
+};
+
+static bool
+decode_ovs_sample_attr_actions_item(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	decode_nlattr(tcp, addr, len, ovs_action_attr,
+		"OVS_ACTION_ATTR_???",
+	ARRSZ_PAIR(action_attrs_attr_decoders),
+		NULL);
+	return true;
+}
+
+static bool
+decode_ovs_sample_attr_actions(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	nla_decoder_t decoder = &decode_ovs_sample_attr_actions_item;
+	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
+	return true;
+}
+
+static const nla_decoder_t sample_attrs_attr_decoders[] = {
+	[OVS_SAMPLE_ATTR_PROBABILITY] = decode_nla_u32,
+	[OVS_SAMPLE_ATTR_ACTIONS] = decode_ovs_sample_attr_actions,
+};
+
+static const nla_decoder_t userspace_attrs_attr_decoders[] = {
+	[OVS_USERSPACE_ATTR_PID] = decode_nla_u32,
+	[OVS_USERSPACE_ATTR_USERDATA] = NULL,
+	[OVS_USERSPACE_ATTR_EGRESS_TUN_PORT] = decode_nla_u32,
+	[OVS_USERSPACE_ATTR_ACTIONS] = NULL,
+};
+
+static const nla_decoder_t ovs_nsh_key_attrs_attr_decoders[] = {
+	[OVS_NSH_KEY_ATTR_BASE] = NULL,
+	[OVS_NSH_KEY_ATTR_MD1] = NULL,
+	[OVS_NSH_KEY_ATTR_MD2] = NULL,
+};
+
+static bool
+decode_ovs_ct_attr_nat_item(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	decode_nlattr(tcp, addr, len, ovs_nat_attr,
+		"OVS_NAT_ATTR_???",
+	ARRSZ_PAIR(nat_attrs_attr_decoders),
+		NULL);
+	return true;
+}
+
+static bool
+decode_ovs_ct_attr_nat(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	nla_decoder_t decoder = &decode_ovs_ct_attr_nat_item;
+	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
+	return true;
+}
+
+static const nla_decoder_t ct_attrs_attr_decoders[] = {
+	[OVS_CT_ATTR_COMMIT] = NULL,
+	[OVS_CT_ATTR_ZONE] = decode_nla_u16,
+	[OVS_CT_ATTR_MARK] = NULL,
+	[OVS_CT_ATTR_LABELS] = NULL,
+	[OVS_CT_ATTR_HELPER] = decode_nla_str,
+	[OVS_CT_ATTR_NAT] = decode_ovs_ct_attr_nat,
+	[OVS_CT_ATTR_FORCE_COMMIT] = NULL,
+	[OVS_CT_ATTR_EVENTMASK] = decode_nla_u32,
+	[OVS_CT_ATTR_TIMEOUT] = decode_nla_str,
+};
+
+static const nla_decoder_t nat_attrs_attr_decoders[] = {
+	[OVS_NAT_ATTR_SRC] = NULL,
+	[OVS_NAT_ATTR_DST] = NULL,
+	[OVS_NAT_ATTR_IP_MIN] = NULL,
+	[OVS_NAT_ATTR_IP_MAX] = NULL,
+	[OVS_NAT_ATTR_PROTO_MIN] = decode_nla_u16,
+	[OVS_NAT_ATTR_PROTO_MAX] = decode_nla_u16,
+	[OVS_NAT_ATTR_PERSISTENT] = NULL,
+	[OVS_NAT_ATTR_PROTO_HASH] = NULL,
+	[OVS_NAT_ATTR_PROTO_RANDOM] = NULL,
+};
+
+static bool
+decode_ovs_dec_ttl_attr_action_item(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	decode_nlattr(tcp, addr, len, ovs_action_attr,
+		"OVS_ACTION_ATTR_???",
+	ARRSZ_PAIR(action_attrs_attr_decoders),
+		NULL);
+	return true;
+}
+
+static bool
+decode_ovs_dec_ttl_attr_action(struct tcb *const tcp,
+	const kernel_ulong_t addr,
+	const unsigned int len,
+	const void *const opaque_data)
+{
+	nla_decoder_t decoder = &decode_ovs_dec_ttl_attr_action_item;
+	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
+	return true;
+}
+
+static const nla_decoder_t dec_ttl_attrs_attr_decoders[] = {
+	[OVS_DEC_TTL_ATTR_ACTION] = decode_ovs_dec_ttl_attr_action,
+};
+
+static const nla_decoder_t vxlan_ext_attrs_attr_decoders[] = {
+	[OVS_VLAN_EXT_ATTR_GBP] = decode_nla_u32,
+};
+
+DECL_NETLINK_GENERIC_DECODER(decode_ovs_flow_msg) {
+	struct ovs_header header;
+	size_t offset = sizeof(struct ovs_header);
+
+	tprint_struct_begin();
+	PRINT_FIELD_XVAL(*genl, cmd, ovs_flow_cmds, "OVS_FLOW_CMD_???");
+	tprint_struct_next();
+	PRINT_FIELD_U(*genl, version);
+	tprint_struct_next();
+	if (umove_or_printaddr(tcp, addr, &header))
+		return true;
+	PRINT_FIELD_U(header, dp_ifindex);
+	tprint_struct_next();
+
+	decode_nlattr(tcp, addr + offset, len - offset,
+		ovs_flow_attr,
+		"OVS_FLOW_ATTR_???",
+		ARRSZ_PAIR(flow-attrs_attr_decoders),
+		NULL);
+	tprint_struct_end();
+}
+#+end_src
