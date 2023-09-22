@@ -298,7 +298,7 @@ decode_netlink_generic(struct tcb *const tcp,
 }
 #+end_src
 
-And here's the strace output for a ~nlctrl~ response:
+And here's the shiny new strace output for a ~nlctrl~ response:
 
 #+begin_src sh :results output
 recvmsg(8, {msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base=[{nlmsg_len=192, nlmsg_type=nlctrl, nlmsg_flags=0, nlmsg_seq=1, nlmsg_pid=97132}, {cmd=CTRL_CMD_NEWFAMILY, version=2, [[{nla_len=17, nla_type=CTRL_ATTR_FAMILY_NAME}, "ovs_datapath"], [{nla_len=6, nla_type=CTRL_ATTR_FAMILY_ID}, 35], [{nla_len=8, nla_type=CTRL_ATTR_VERSION}, 2], [{nla_len=8, nla_type=CTRL_ATTR_HDRSIZE}, 4], [{nla_len=8, nla_type=CTRL_ATTR_MAXATTR}, 9], [{nla_len=84, nla_type=CTRL_ATTR_OPS}, [[{nla_len=20, nla_type=0x1}, [[{nla_len=8, nla_type=CTRL_ATTR_OP_ID}, 1], [{nla_len=8, nla_type=CTRL_ATTR_OP_FLAGS}, GENL_CMD_CAP_DO|GENL_CMD_CAP_HASPOL|GENL_UNS_ADMIN_PERM]]], [{nla_len=20, nla_type=0x2}, [[{nla_len=8, nla_type=CTRL_ATTR_OP_ID}, 2], [{nla_len=8, nla_type=CTRL_ATTR_OP_FLAGS}, GENL_CMD_CAP_DO|GENL_CMD_CAP_HASPOL|GENL_UNS_ADMIN_PERM]]], [{nla_len=20, nla_type=0x3}, [[{nla_len=8, nla_type=CTRL_ATTR_OP_ID}, 3], [{nla_len=8, nla_type=CTRL_ATTR_OP_FLAGS}, GENL_CMD_CAP_DO|GENL_CMD_CAP_DUMP|GENL_CMD_CAP_HASPOL]]], [{nla_len=20, nla_type=0x4}, [[{nla_len=8, nla_type=CTRL_ATTR_OP_ID}, 4], [{nla_len=8, nla_type=CTRL_ATTR_OP_FLAGS}, GENL_CMD_CAP_DO|GENL_CMD_CAP_HASPOL|GENL_UNS_ADMIN_PERM]]]]], [{nla_len=36, nla_type=CTRL_ATTR_MCAST_GROUPS}, [{nla_len=32, nla_type=0x1}, [[{nla_len=8, nla_type=CTRL_ATTR_MCAST_GRP_ID}, 10], [{nla_len=17, nla_type=CTRL_ATTR_MCAST_GRP_NAME}, "ovs_datapath"]]]]]}], iov_len=1024}, {iov_base="", iov_len=65536}], msg_iovlen=2, msg_controllen=0, msg_flags=0}, MSG_DONTWAIT) = 192
@@ -509,7 +509,7 @@ for op in family.msgs.values():
 
     if op.fixed_header:
         cw.p('if (umove_or_printaddr(tcp, addr, &header))')
-        cw.p('return true;')
+        cw.p('return;')
         for m in defn.members:
             cw.p(f"PRINT_FIELD_U(header, {c_lower(m.name)});")
             cw.p('tprint_struct_next();')
@@ -520,7 +520,7 @@ for op in family.msgs.values():
 
     cw.p(f"\t{enum_name},");
     cw.p(f"\t\"{name_prefix}???\",");
-    cw.p(f"\tARRSZ_PAIR({attr_set_name}_attr_decoders),");
+    cw.p(f"\tARRSZ_PAIR({c_lower(attr_set_name)}_attr_decoders),");
     cw.p("\tNULL);")
     cw.p('tprint_struct_end();')
     cw.block_end()
@@ -550,7 +550,8 @@ recvmsg(9, {msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base=[{nlmsg_len=124, nl
 
 Here is an example of how to use the strace code generator for the ~ovs_flow~ genetlink family,
 followed by the complete generated output for ~ovs_flow~. I'm glad I didn't have to write that
-by hand.
+by hand. This is a great demonstration of why creating machine readable schema definitions for
+the netlink families is such a worthy project.
 
 #+header: :var PYTHON="/Users/donaldh/.py/bin/python"
 #+begin_src sh :results output :wrap src c :dir "/Volumes/opt/net-next"
@@ -589,7 +590,7 @@ OVS_FLOW_OVS_HASH_ALG_OVS_HASH_ALG_L4
 // For src/xlat/ovs_flow_ct_state_flags.in
 #unconditional
 OVS_CS_F_NEW
-vOVS_CS_F_ESTABLISHED
+OVS_CS_F_ESTABLISHED
 OVS_CS_F_RELATED
 OVS_CS_F_REPLY_DIR
 OVS_CS_F_INVALID
@@ -755,10 +756,10 @@ OVS_NAT_ATTR_PROTO_RANDOM
 #value_indexed
 OVS_DEC_TTL_ATTR_ACTION
 
-// For src/xlat/ovs_vlan_ext_attr.in
+// For src/xlat/ovs_vxlan_ext_.in
 #unconditional
 #value_indexed
-OVS_VLAN_EXT_ATTR_GBP
+OVS_VXLAN_EXT_GBP
 
 // For src/xlat/ovs_flow_cmds.in
 #unconditional
@@ -783,23 +784,23 @@ extern DECL_NETLINK_GENERIC_DECODER(decode_ovs_flow_msg);
 #include <linux/genetlink.h>
 #include <linux/openvswitch.h>
 #include "netlink_generic.h"
-#include "ovs_flow_ovs_frag_type.h"
-#include "ovs_flow_ovs_ufid_flags.h"
-#include "ovs_flow_ovs_hash_alg.h"
-#include "ovs_flow_ct_state_flags.h"
-#include "ovs_flow_attr.h"
-#include "ovs_key_attr.h"
-#include "ovs_action_attr.h"
-#include "ovs_tunnel_key_attr.h"
-#include "ovs_check_pkt_len_attr.h"
-#include "ovs_sample_attr.h"
-#include "ovs_userspace_attr.h"
-#include "ovs_nsh_key_attr.h"
-#include "ovs_ct_attr.h"
-#include "ovs_nat_attr.h"
-#include "ovs_dec_ttl_attr.h"
-#include "ovs_vlan_ext_attr.h"
-#include "ovs_flow_cmds.h"
+#include "xlat/ovs_flow_ovs_frag_type.h"
+#include "xlat/ovs_flow_ovs_ufid_flags.h"
+#include "xlat/ovs_flow_ovs_hash_alg.h"
+#include "xlat/ovs_flow_ct_state_flags.h"
+#include "xlat/ovs_flow_attr.h"
+#include "xlat/ovs_key_attr.h"
+#include "xlat/ovs_action_attr.h"
+#include "xlat/ovs_tunnel_key_attr.h"
+#include "xlat/ovs_check_pkt_len_attr.h"
+#include "xlat/ovs_sample_attr.h"
+#include "xlat/ovs_userspace_attr.h"
+#include "xlat/ovs_nsh_key_attr.h"
+#include "xlat/ovs_ct_attr.h"
+#include "xlat/ovs_nat_attr.h"
+#include "xlat/ovs_dec_ttl_attr.h"
+#include "xlat/ovs_vxlan_ext_.h"
+#include "xlat/ovs_flow_cmds.h"
 
 static bool
 decode_ovs_header(struct tcb *const tcp,
@@ -1004,7 +1005,7 @@ decode_ovs_action_hash(struct tcb *const tcp,
 	struct ovs_action_hash ovs_action_hash;
 	umove_or_printaddr(tcp, addr, &ovs_action_hash);
 
-	PRINT_FIELD_U(ovs_action_hash, hash_algorithm);
+	PRINT_FIELD_U(ovs_action_hash, hash_alg);
 	tprint_struct_next();
 	PRINT_FIELD_U(ovs_action_hash, hash_basis);
 	tprint_struct_next();
@@ -1032,9 +1033,9 @@ decode_ovs_action_push_mpls(struct tcb *const tcp,
 	struct ovs_action_push_mpls ovs_action_push_mpls;
 	umove_or_printaddr(tcp, addr, &ovs_action_push_mpls);
 
-	PRINT_FIELD_U(ovs_action_push_mpls, lse);
+	PRINT_FIELD_U(ovs_action_push_mpls, mpls_lse);
 	tprint_struct_next();
-	PRINT_FIELD_U(ovs_action_push_mpls, ethertype);
+	PRINT_FIELD_U(ovs_action_push_mpls, mpls_ethertype);
 	tprint_struct_next();
 	return true;
 }
@@ -1048,9 +1049,9 @@ decode_ovs_action_add_mpls(struct tcb *const tcp,
 	struct ovs_action_add_mpls ovs_action_add_mpls;
 	umove_or_printaddr(tcp, addr, &ovs_action_add_mpls);
 
-	PRINT_FIELD_U(ovs_action_add_mpls, lse);
+	PRINT_FIELD_U(ovs_action_add_mpls, mpls_lse);
 	tprint_struct_next();
-	PRINT_FIELD_U(ovs_action_add_mpls, ethertype);
+	PRINT_FIELD_U(ovs_action_add_mpls, mpls_ethertype);
 	tprint_struct_next();
 	PRINT_FIELD_U(ovs_action_add_mpls, tun_flags);
 	tprint_struct_next();
@@ -1070,38 +1071,14 @@ decode_ct_state_flags(struct tcb *const tcp,
 }
 
 static bool
-decode_ovs_flow_attr_key_item(struct tcb *const tcp,
+decode_ovs_flow_attr_key(struct tcb *const tcp,
 	const kernel_ulong_t addr,
 	const unsigned int len,
 	const void *const opaque_data)
 {
 	decode_nlattr(tcp, addr, len, ovs_key_attr,
 		"OVS_KEY_ATTR_???",
-	ARRSZ_PAIR(key_attrs_attr_decoders),
-		NULL);
-	return true;
-}
-
-static bool
-decode_ovs_flow_attr_key(struct tcb *const tcp,
-	const kernel_ulong_t addr,
-	const unsigned int len,
-	const void *const opaque_data)
-{
-	nla_decoder_t decoder = &decode_ovs_flow_attr_key_item;
-	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
-	return true;
-}
-
-static bool
-decode_ovs_flow_attr_actions_item(struct tcb *const tcp,
-	const kernel_ulong_t addr,
-	const unsigned int len,
-	const void *const opaque_data)
-{
-	decode_nlattr(tcp, addr, len, ovs_action_attr,
-		"OVS_ACTION_ATTR_???",
-	ARRSZ_PAIR(action_attrs_attr_decoders),
+		ARRSZ_PAIR(key_attrs_attr_decoders),
 		NULL);
 	return true;
 }
@@ -1112,20 +1089,9 @@ decode_ovs_flow_attr_actions(struct tcb *const tcp,
 	const unsigned int len,
 	const void *const opaque_data)
 {
-	nla_decoder_t decoder = &decode_ovs_flow_attr_actions_item;
-	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
-	return true;
-}
-
-static bool
-decode_ovs_flow_attr_mask_item(struct tcb *const tcp,
-	const kernel_ulong_t addr,
-	const unsigned int len,
-	const void *const opaque_data)
-{
-	decode_nlattr(tcp, addr, len, ovs_key_attr,
-		"OVS_KEY_ATTR_???",
-	ARRSZ_PAIR(key_attrs_attr_decoders),
+	decode_nlattr(tcp, addr, len, ovs_action_attr,
+		"OVS_ACTION_ATTR_???",
+		ARRSZ_PAIR(action_attrs_attr_decoders),
 		NULL);
 	return true;
 }
@@ -1136,8 +1102,10 @@ decode_ovs_flow_attr_mask(struct tcb *const tcp,
 	const unsigned int len,
 	const void *const opaque_data)
 {
-	nla_decoder_t decoder = &decode_ovs_flow_attr_mask_item;
-	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
+	decode_nlattr(tcp, addr, len, ovs_key_attr,
+		"OVS_KEY_ATTR_???",
+		ARRSZ_PAIR(key_attrs_attr_decoders),
+		NULL);
 	return true;
 }
 
@@ -1156,38 +1124,14 @@ static const nla_decoder_t flow_attrs_attr_decoders[] = {
 };
 
 static bool
-decode_ovs_key_attr_encap_item(struct tcb *const tcp,
+decode_ovs_key_attr_encap(struct tcb *const tcp,
 	const kernel_ulong_t addr,
 	const unsigned int len,
 	const void *const opaque_data)
 {
 	decode_nlattr(tcp, addr, len, ovs_key_attr,
 		"OVS_KEY_ATTR_???",
-	ARRSZ_PAIR(key_attrs_attr_decoders),
-		NULL);
-	return true;
-}
-
-static bool
-decode_ovs_key_attr_encap(struct tcb *const tcp,
-	const kernel_ulong_t addr,
-	const unsigned int len,
-	const void *const opaque_data)
-{
-	nla_decoder_t decoder = &decode_ovs_key_attr_encap_item;
-	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
-	return true;
-}
-
-static bool
-decode_ovs_key_attr_tunnel_item(struct tcb *const tcp,
-	const kernel_ulong_t addr,
-	const unsigned int len,
-	const void *const opaque_data)
-{
-	decode_nlattr(tcp, addr, len, ovs_tunnel_key_attr,
-		"OVS_TUNNEL_KEY_ATTR_???",
-	ARRSZ_PAIR(tunnel_key_attrs_attr_decoders),
+		ARRSZ_PAIR(key_attrs_attr_decoders),
 		NULL);
 	return true;
 }
@@ -1198,20 +1142,9 @@ decode_ovs_key_attr_tunnel(struct tcb *const tcp,
 	const unsigned int len,
 	const void *const opaque_data)
 {
-	nla_decoder_t decoder = &decode_ovs_key_attr_tunnel_item;
-	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
-	return true;
-}
-
-static bool
-decode_ovs_key_attr_nsh_item(struct tcb *const tcp,
-	const kernel_ulong_t addr,
-	const unsigned int len,
-	const void *const opaque_data)
-{
-	decode_nlattr(tcp, addr, len, ovs_nsh_key_attr,
-		"OVS_NSH_KEY_ATTR_???",
-	ARRSZ_PAIR(ovs_nsh_key_attrs_attr_decoders),
+	decode_nlattr(tcp, addr, len, ovs_tunnel_key_attr,
+		"OVS_TUNNEL_KEY_ATTR_???",
+		ARRSZ_PAIR(tunnel_key_attrs_attr_decoders),
 		NULL);
 	return true;
 }
@@ -1222,8 +1155,10 @@ decode_ovs_key_attr_nsh(struct tcb *const tcp,
 	const unsigned int len,
 	const void *const opaque_data)
 {
-	nla_decoder_t decoder = &decode_ovs_key_attr_nsh_item;
-	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
+	decode_nlattr(tcp, addr, len, ovs_nsh_key_attr,
+		"OVS_NSH_KEY_ATTR_???",
+		ARRSZ_PAIR(ovs_nsh_key_attrs_attr_decoders),
+		NULL);
 	return true;
 }
 
@@ -1263,38 +1198,14 @@ static const nla_decoder_t key_attrs_attr_decoders[] = {
 };
 
 static bool
-decode_ovs_action_attr_userspace_item(struct tcb *const tcp,
+decode_ovs_action_attr_userspace(struct tcb *const tcp,
 	const kernel_ulong_t addr,
 	const unsigned int len,
 	const void *const opaque_data)
 {
 	decode_nlattr(tcp, addr, len, ovs_userspace_attr,
 		"OVS_USERSPACE_ATTR_???",
-	ARRSZ_PAIR(userspace_attrs_attr_decoders),
-		NULL);
-	return true;
-}
-
-static bool
-decode_ovs_action_attr_userspace(struct tcb *const tcp,
-	const kernel_ulong_t addr,
-	const unsigned int len,
-	const void *const opaque_data)
-{
-	nla_decoder_t decoder = &decode_ovs_action_attr_userspace_item;
-	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
-	return true;
-}
-
-static bool
-decode_ovs_action_attr_set_item(struct tcb *const tcp,
-	const kernel_ulong_t addr,
-	const unsigned int len,
-	const void *const opaque_data)
-{
-	decode_nlattr(tcp, addr, len, ovs_key_attr,
-		"OVS_KEY_ATTR_???",
-	ARRSZ_PAIR(key_attrs_attr_decoders),
+		ARRSZ_PAIR(userspace_attrs_attr_decoders),
 		NULL);
 	return true;
 }
@@ -1305,20 +1216,9 @@ decode_ovs_action_attr_set(struct tcb *const tcp,
 	const unsigned int len,
 	const void *const opaque_data)
 {
-	nla_decoder_t decoder = &decode_ovs_action_attr_set_item;
-	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
-	return true;
-}
-
-static bool
-decode_ovs_action_attr_sample_item(struct tcb *const tcp,
-	const kernel_ulong_t addr,
-	const unsigned int len,
-	const void *const opaque_data)
-{
-	decode_nlattr(tcp, addr, len, ovs_sample_attr,
-		"OVS_SAMPLE_ATTR_???",
-	ARRSZ_PAIR(sample_attrs_attr_decoders),
+	decode_nlattr(tcp, addr, len, ovs_key_attr,
+		"OVS_KEY_ATTR_???",
+		ARRSZ_PAIR(key_attrs_attr_decoders),
 		NULL);
 	return true;
 }
@@ -1329,20 +1229,9 @@ decode_ovs_action_attr_sample(struct tcb *const tcp,
 	const unsigned int len,
 	const void *const opaque_data)
 {
-	nla_decoder_t decoder = &decode_ovs_action_attr_sample_item;
-	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
-	return true;
-}
-
-static bool
-decode_ovs_action_attr_set_masked_item(struct tcb *const tcp,
-	const kernel_ulong_t addr,
-	const unsigned int len,
-	const void *const opaque_data)
-{
-	decode_nlattr(tcp, addr, len, ovs_key_attr,
-		"OVS_KEY_ATTR_???",
-	ARRSZ_PAIR(key_attrs_attr_decoders),
+	decode_nlattr(tcp, addr, len, ovs_sample_attr,
+		"OVS_SAMPLE_ATTR_???",
+		ARRSZ_PAIR(sample_attrs_attr_decoders),
 		NULL);
 	return true;
 }
@@ -1353,20 +1242,9 @@ decode_ovs_action_attr_set_masked(struct tcb *const tcp,
 	const unsigned int len,
 	const void *const opaque_data)
 {
-	nla_decoder_t decoder = &decode_ovs_action_attr_set_masked_item;
-	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
-	return true;
-}
-
-static bool
-decode_ovs_action_attr_ct_item(struct tcb *const tcp,
-	const kernel_ulong_t addr,
-	const unsigned int len,
-	const void *const opaque_data)
-{
-	decode_nlattr(tcp, addr, len, ovs_ct_attr,
-		"OVS_CT_ATTR_???",
-	ARRSZ_PAIR(ct_attrs_attr_decoders),
+	decode_nlattr(tcp, addr, len, ovs_key_attr,
+		"OVS_KEY_ATTR_???",
+		ARRSZ_PAIR(key_attrs_attr_decoders),
 		NULL);
 	return true;
 }
@@ -1377,20 +1255,9 @@ decode_ovs_action_attr_ct(struct tcb *const tcp,
 	const unsigned int len,
 	const void *const opaque_data)
 {
-	nla_decoder_t decoder = &decode_ovs_action_attr_ct_item;
-	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
-	return true;
-}
-
-static bool
-decode_ovs_action_attr_push_nsh_item(struct tcb *const tcp,
-	const kernel_ulong_t addr,
-	const unsigned int len,
-	const void *const opaque_data)
-{
-	decode_nlattr(tcp, addr, len, ovs_nsh_key_attr,
-		"OVS_NSH_KEY_ATTR_???",
-	ARRSZ_PAIR(ovs_nsh_key_attrs_attr_decoders),
+	decode_nlattr(tcp, addr, len, ovs_ct_attr,
+		"OVS_CT_ATTR_???",
+		ARRSZ_PAIR(ct_attrs_attr_decoders),
 		NULL);
 	return true;
 }
@@ -1401,20 +1268,9 @@ decode_ovs_action_attr_push_nsh(struct tcb *const tcp,
 	const unsigned int len,
 	const void *const opaque_data)
 {
-	nla_decoder_t decoder = &decode_ovs_action_attr_push_nsh_item;
-	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
-	return true;
-}
-
-static bool
-decode_ovs_action_attr_clone_item(struct tcb *const tcp,
-	const kernel_ulong_t addr,
-	const unsigned int len,
-	const void *const opaque_data)
-{
-	decode_nlattr(tcp, addr, len, ovs_action_attr,
-		"OVS_ACTION_ATTR_???",
-	ARRSZ_PAIR(action_attrs_attr_decoders),
+	decode_nlattr(tcp, addr, len, ovs_nsh_key_attr,
+		"OVS_NSH_KEY_ATTR_???",
+		ARRSZ_PAIR(ovs_nsh_key_attrs_attr_decoders),
 		NULL);
 	return true;
 }
@@ -1425,20 +1281,9 @@ decode_ovs_action_attr_clone(struct tcb *const tcp,
 	const unsigned int len,
 	const void *const opaque_data)
 {
-	nla_decoder_t decoder = &decode_ovs_action_attr_clone_item;
-	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
-	return true;
-}
-
-static bool
-decode_ovs_action_attr_check_pkt_len_item(struct tcb *const tcp,
-	const kernel_ulong_t addr,
-	const unsigned int len,
-	const void *const opaque_data)
-{
-	decode_nlattr(tcp, addr, len, ovs_check_pkt_len_attr,
-		"OVS_CHECK_PKT_LEN_ATTR_???",
-	ARRSZ_PAIR(check_pkt_len_attrs_attr_decoders),
+	decode_nlattr(tcp, addr, len, ovs_action_attr,
+		"OVS_ACTION_ATTR_???",
+		ARRSZ_PAIR(action_attrs_attr_decoders),
 		NULL);
 	return true;
 }
@@ -1449,20 +1294,9 @@ decode_ovs_action_attr_check_pkt_len(struct tcb *const tcp,
 	const unsigned int len,
 	const void *const opaque_data)
 {
-	nla_decoder_t decoder = &decode_ovs_action_attr_check_pkt_len_item;
-	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
-	return true;
-}
-
-static bool
-decode_ovs_action_attr_dec_ttl_item(struct tcb *const tcp,
-	const kernel_ulong_t addr,
-	const unsigned int len,
-	const void *const opaque_data)
-{
-	decode_nlattr(tcp, addr, len, ovs_dec_ttl_attr,
-		"OVS_DEC_TTL_ATTR_???",
-	ARRSZ_PAIR(dec_ttl_attrs_attr_decoders),
+	decode_nlattr(tcp, addr, len, ovs_check_pkt_len_attr,
+		"OVS_CHECK_PKT_LEN_ATTR_???",
+		ARRSZ_PAIR(check_pkt_len_attrs_attr_decoders),
 		NULL);
 	return true;
 }
@@ -1473,8 +1307,10 @@ decode_ovs_action_attr_dec_ttl(struct tcb *const tcp,
 	const unsigned int len,
 	const void *const opaque_data)
 {
-	nla_decoder_t decoder = &decode_ovs_action_attr_dec_ttl_item;
-	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
+	decode_nlattr(tcp, addr, len, ovs_dec_ttl_attr,
+		"OVS_DEC_TTL_ATTR_???",
+		ARRSZ_PAIR(dec_ttl_attrs_attr_decoders),
+		NULL);
 	return true;
 }
 
@@ -1505,26 +1341,15 @@ static const nla_decoder_t action_attrs_attr_decoders[] = {
 };
 
 static bool
-decode_ovs_tunnel_key_attr_vxlan_opts_item(struct tcb *const tcp,
-	const kernel_ulong_t addr,
-	const unsigned int len,
-	const void *const opaque_data)
-{
-	decode_nlattr(tcp, addr, len, ovs_vlan_ext_attr,
-		"OVS_VLAN_EXT_ATTR_???",
-	ARRSZ_PAIR(vxlan_ext_attrs_attr_decoders),
-		NULL);
-	return true;
-}
-
-static bool
 decode_ovs_tunnel_key_attr_vxlan_opts(struct tcb *const tcp,
 	const kernel_ulong_t addr,
 	const unsigned int len,
 	const void *const opaque_data)
 {
-	nla_decoder_t decoder = &decode_ovs_tunnel_key_attr_vxlan_opts_item;
-	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
+	decode_nlattr(tcp, addr, len, ovs_vxlan_ext_,
+		"OVS_VXLAN_EXT_???",
+		ARRSZ_PAIR(vxlan_ext_attrs_attr_decoders),
+		NULL);
 	return true;
 }
 
@@ -1549,38 +1374,14 @@ static const nla_decoder_t tunnel_key_attrs_attr_decoders[] = {
 };
 
 static bool
-decode_ovs_check_pkt_len_attr_actions_if_greater_item(struct tcb *const tcp,
-	const kernel_ulong_t addr,
-	const unsigned int len,
-	const void *const opaque_data)
-{
-	decode_nlattr(tcp, addr, len, ovs_action_attr,
-		"OVS_ACTION_ATTR_???",
-	ARRSZ_PAIR(action_attrs_attr_decoders),
-		NULL);
-	return true;
-}
-
-static bool
 decode_ovs_check_pkt_len_attr_actions_if_greater(struct tcb *const tcp,
 	const kernel_ulong_t addr,
 	const unsigned int len,
 	const void *const opaque_data)
 {
-	nla_decoder_t decoder = &decode_ovs_check_pkt_len_attr_actions_if_greater_item;
-	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
-	return true;
-}
-
-static bool
-decode_ovs_check_pkt_len_attr_actions_if_less_equal_item(struct tcb *const tcp,
-	const kernel_ulong_t addr,
-	const unsigned int len,
-	const void *const opaque_data)
-{
 	decode_nlattr(tcp, addr, len, ovs_action_attr,
 		"OVS_ACTION_ATTR_???",
-	ARRSZ_PAIR(action_attrs_attr_decoders),
+		ARRSZ_PAIR(action_attrs_attr_decoders),
 		NULL);
 	return true;
 }
@@ -1591,8 +1392,10 @@ decode_ovs_check_pkt_len_attr_actions_if_less_equal(struct tcb *const tcp,
 	const unsigned int len,
 	const void *const opaque_data)
 {
-	nla_decoder_t decoder = &decode_ovs_check_pkt_len_attr_actions_if_less_equal_item;
-	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
+	decode_nlattr(tcp, addr, len, ovs_action_attr,
+		"OVS_ACTION_ATTR_???",
+		ARRSZ_PAIR(action_attrs_attr_decoders),
+		NULL);
 	return true;
 }
 
@@ -1603,26 +1406,15 @@ static const nla_decoder_t check_pkt_len_attrs_attr_decoders[] = {
 };
 
 static bool
-decode_ovs_sample_attr_actions_item(struct tcb *const tcp,
+decode_ovs_sample_attr_actions(struct tcb *const tcp,
 	const kernel_ulong_t addr,
 	const unsigned int len,
 	const void *const opaque_data)
 {
 	decode_nlattr(tcp, addr, len, ovs_action_attr,
 		"OVS_ACTION_ATTR_???",
-	ARRSZ_PAIR(action_attrs_attr_decoders),
+		ARRSZ_PAIR(action_attrs_attr_decoders),
 		NULL);
-	return true;
-}
-
-static bool
-decode_ovs_sample_attr_actions(struct tcb *const tcp,
-	const kernel_ulong_t addr,
-	const unsigned int len,
-	const void *const opaque_data)
-{
-	nla_decoder_t decoder = &decode_ovs_sample_attr_actions_item;
-	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
 	return true;
 }
 
@@ -1645,26 +1437,15 @@ static const nla_decoder_t ovs_nsh_key_attrs_attr_decoders[] = {
 };
 
 static bool
-decode_ovs_ct_attr_nat_item(struct tcb *const tcp,
+decode_ovs_ct_attr_nat(struct tcb *const tcp,
 	const kernel_ulong_t addr,
 	const unsigned int len,
 	const void *const opaque_data)
 {
 	decode_nlattr(tcp, addr, len, ovs_nat_attr,
 		"OVS_NAT_ATTR_???",
-	ARRSZ_PAIR(nat_attrs_attr_decoders),
+		ARRSZ_PAIR(nat_attrs_attr_decoders),
 		NULL);
-	return true;
-}
-
-static bool
-decode_ovs_ct_attr_nat(struct tcb *const tcp,
-	const kernel_ulong_t addr,
-	const unsigned int len,
-	const void *const opaque_data)
-{
-	nla_decoder_t decoder = &decode_ovs_ct_attr_nat_item;
-	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
 	return true;
 }
 
@@ -1693,26 +1474,15 @@ static const nla_decoder_t nat_attrs_attr_decoders[] = {
 };
 
 static bool
-decode_ovs_dec_ttl_attr_action_item(struct tcb *const tcp,
+decode_ovs_dec_ttl_attr_action(struct tcb *const tcp,
 	const kernel_ulong_t addr,
 	const unsigned int len,
 	const void *const opaque_data)
 {
 	decode_nlattr(tcp, addr, len, ovs_action_attr,
 		"OVS_ACTION_ATTR_???",
-	ARRSZ_PAIR(action_attrs_attr_decoders),
+		ARRSZ_PAIR(action_attrs_attr_decoders),
 		NULL);
-	return true;
-}
-
-static bool
-decode_ovs_dec_ttl_attr_action(struct tcb *const tcp,
-	const kernel_ulong_t addr,
-	const unsigned int len,
-	const void *const opaque_data)
-{
-	nla_decoder_t decoder = &decode_ovs_dec_ttl_attr_action_item;
-	decode_nlattr(tcp, addr, len, NULL, NULL, &decoder, 0, NULL);
 	return true;
 }
 
@@ -1721,7 +1491,7 @@ static const nla_decoder_t dec_ttl_attrs_attr_decoders[] = {
 };
 
 static const nla_decoder_t vxlan_ext_attrs_attr_decoders[] = {
-	[OVS_VLAN_EXT_ATTR_GBP] = decode_nla_u32,
+	[OVS_VXLAN_EXT_GBP] = decode_nla_u32,
 };
 
 DECL_NETLINK_GENERIC_DECODER(decode_ovs_flow_msg) {
@@ -1734,15 +1504,14 @@ DECL_NETLINK_GENERIC_DECODER(decode_ovs_flow_msg) {
 	PRINT_FIELD_U(*genl, version);
 	tprint_struct_next();
 	if (umove_or_printaddr(tcp, addr, &header))
-		return true;
+		return;
 	PRINT_FIELD_U(header, dp_ifindex);
 	tprint_struct_next();
 
 	decode_nlattr(tcp, addr + offset, len - offset,
 		ovs_flow_attr,
 		"OVS_FLOW_ATTR_???",
-		ARRSZ_PAIR(flow-attrs_attr_decoders),
+		ARRSZ_PAIR(flow_attrs_attr_decoders),
 		NULL);
 	tprint_struct_end();
-}
 #+end_src
