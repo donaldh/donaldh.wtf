@@ -736,3 +736,29 @@ figcaption {
     margin-left: -35vw;
     margin-right: -35vw;
 }
+
+.r-margin {
+    position: absolute;
+    left: 105%;
+    width: 25%;
+    padding-left: 20px;
+    border-left: 1px solid #888;
+    color: #888;
+    font-style: italic;
+    font-size: 80%;
+}
+
+.l-margin {
+    position: absolute;
+    right: 105%;
+    width: 25%;
+    padding-right: 20px;
+    border-right: 1px solid #888;
+    color: #888;
+    font-style: italic;
+    font-size: 80%;
+}
+
+pre {
+    font-size: 12px;
+}
