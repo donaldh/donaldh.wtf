@@ -54,10 +54,6 @@ Pygments is mostly compatable with the newer Chroma. It is slower but has some a
 
 Client side highlighting does not require pygments to be installed. This will use `highlight.min.css` instead of `syntax.css` for highlighting (effectively disabling Chroma). Highlight.js has a wider range of support for languages and themes, and an alternative highlighting engine.
 
-### Disqus support
-
-To use this feature, uncomment and fill out the `disqusShortname` parameter in `config.toml`.
-
 ### Staticman support
 
 Add *staticman* configuration section in `config.toml` or `config.yaml`
@@ -98,12 +94,6 @@ comments:
     secret: "hsGjWtWHR4HK4pT7cUsWTArJdZDxxE2pkdg/ArwCguqYQrhuubjj3RS9C5qa8xu4cx/Y9EwHwAMEeXPCZbLR9eW1K9LshissvNcYFfC/b8KKb4deH4V1+oqJEk/JcoK6jp6Rr2nZV4rjDP9M7nunC3WR5UGwMIYb8kKhur9pAic="
 ```
 
-
-
-### Google Analytics
-
-To add Google Analytics, simply sign up to [Google Analytics](https://www.google.com/analytics/) to obtain your Google Tracking ID, and add this tracking ID to the `googleAnalytics` parameter in `config.toml`.
-
 ### Commit SHA on the footer
 
 If the source of your site is in a Git repo, the SHA corresponding to the commit the site is built from can be shown on the footer. To do so, two environment variables have to be set (`GIT_COMMIT_SHA` and `GIT_COMMIT_SHA_SHORT`) and parameter `commit` has to be defined in the config file:
@@ -112,15 +102,16 @@ If the source of your site is in a Git repo, the SHA corresponding to the commit
 [Params]
   commit = "https://github.com/<username>/<siterepo>/tree/"
 ```
-  
+
 This can be achieved by running the next command prior to calling Hugo:
 
 ```
   GIT_COMMIT_SHA=`git rev-parse --verify HEAD` GIT_COMMIT_SHA_SHORT=`git rev-parse --short HEAD`
 ```
-  
-See at [xor-gate/xor-gate.org](https://github.com/xor-gate/xor-gate.org) an example of how to add it to a continuous integration system.
-  
+
+See at [xor-gate/xor-gate.org](https://github.com/xor-gate/xor-gate.org) an example of how to
+add it to a continuous integration system.
+
 ## About
 
 This is a port of the Jekyll theme [Beautiful Jekyll](https://deanattali.com/beautiful-jekyll/) by [Dean Attali](https://deanattali.com/aboutme#contact). It supports most of the features of the original theme.
