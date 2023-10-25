@@ -2,7 +2,6 @@ baseURL: 'https://donaldh.wtf/'
 languageCode: en-uk
 title: donaldh.wtf
 theme: beautifulhugo
-disqusShortname: donaldh-wtf
 params:
   subtitle: Hacks and Misadventures
   highlight: true
