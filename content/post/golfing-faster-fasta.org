@@ -15,9 +15,10 @@ available performance tradeoffs.
 
 ** IO.slurp.lines
 
-This is my baseline which incorporates Timotimo's performance improvements to the original solution, somewhat simplified.
+This is my baseline which incorporates Timotimo's performance improvements to the original
+solution, somewhat simplified.
 
-#+BEGIN_SRC perl6 :results output
+#+BEGIN_SRC raku :results output
   my %seqs;
   my $s = '';
   my $id;
@@ -46,7 +47,7 @@ This is my baseline which incorporates Timotimo's performance improvements to th
 
 What if we avoid using slurp? Hopefully ~IO.lines~ will manage to be faster.
 
-#+BEGIN_SRC perl6 :results output
+#+BEGIN_SRC raku :results output
   my %seqs;
   my $s = '';
   my $id;
@@ -79,7 +80,7 @@ and should scale better for much larger files.
 
 This is my baseline for the second implementation in Timotimo's post.
 
-#+BEGIN_SRC perl6 :results output
+#+BEGIN_SRC raku :results output
   my %seqs = slurp('genome.fa', :enc<latin1>).split('>').skip(1).map: {
       .head => .skip(1).join given .split("\n").cache;
   }
@@ -91,7 +92,7 @@ This is my baseline for the second implementation in Timotimo's post.
 
 ** Racing Split and Skip
 
-#+BEGIN_SRC perl6 :results output
+#+BEGIN_SRC raku :results output
   my %seqs = slurp('genome.fa', :enc<latin1>).split('>').skip(1).race.map: {
       .head => .skip(1).join given .split("\n").cache;
   }
@@ -103,7 +104,7 @@ This is my baseline for the second implementation in Timotimo's post.
 
 ** Hyper Split and Skip
 
-#+BEGIN_SRC perl6 :results output
+#+BEGIN_SRC raku :results output
   my %seqs = slurp('genome.fa', :enc<latin1>).split('>').skip(1).hyper.map: {
       .head => .skip(1).join given .split("\n").cache;
   }
