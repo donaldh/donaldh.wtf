@@ -1,13 +1,14 @@
-SERVE=hugo serve --bind 0.0.0.0
+HUGO ?= ~/git/hugo/hugo
+ARGS ?= --bind 0.0.0.0
 
 draft:	## Serve including draft posts
-	$(SERVE) -D
+	$(HUGO) serve $(ARGS) -D
 
 serve:	## Serve
-	$(SERVE)
+	$(HUGO) serve $(ARGS)
 
 publish:	## Publish site to hosting
-	hugo
+	$(HUGO)
 	rsync -avz --delete public/ $(HOSTING):~/wtf
 
 help:	## This help
