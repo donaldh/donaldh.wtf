@@ -7,6 +7,8 @@ A *veteran* software engineer working at [Red Hat](https://www.redhat.com/en) wh
 and evangelise emerging technologies, with a focus on Linux networking.
 
 * [Linux kernel networking](https://docs.kernel.org/networking/)
+* [Netlink specifications](https://docs.kernel.org/networking/netlink_spec/index.html) and
+  [YNL](https://elixir.bootlin.com/linux/latest/source/tools/net/ynl)
 * [eBPF](https://ebpf.foundation)
 
 I write articles for the [Red Hat Developer blog](https://developers.redhat.com/blog) when I
