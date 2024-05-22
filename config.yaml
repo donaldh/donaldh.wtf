@@ -7,18 +7,18 @@ params:
   highlight: true
   rss: true
   topmenu: categories
+  author:
+    name: Donald Hunter
+    github: donaldh
+    twitter: donaldhunter
+    stackoverflow: 'users/386025'
+    instagram: donaldihunter
+    flickr: sealgair
 markup:
   highlight:
     noClasses: false
 permalinks:
   post: '/:year/:month/:slug/'
-author:
-  name: Donald Hunter
-  github: donaldh
-  twitter: donaldhunter
-  stackoverflow: 'users/386025'
-  instagram: donaldihunter
-  flickr: sealgair
 menu:
   main:
     - name: About
