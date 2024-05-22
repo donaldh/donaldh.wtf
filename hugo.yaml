@@ -14,6 +14,7 @@ params:
     stackoverflow: 'users/386025'
     instagram: donaldihunter
     flickr: sealgair
+    mastodon: donaldh
 markup:
   highlight:
     noClasses: false

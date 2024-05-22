@@ -135,3 +135,9 @@ id = "flickr"
 url = "https://www.flickr.com/people/%s"
 title = "Flickr"
 icon = "fa-flickr"
+
+[[social_icons]]
+id = "mastodon"
+url = "https://hachyderm.io/@%s"
+title = "Mastodon"
+icon = "fa-mastodon"
