@@ -1,6 +1,6 @@
 ---
 title: "about donaldh"
-date: "2018-08-15"
+date: "2024-04-29"
 ---
 
 A *veteran* software engineer working at [Red Hat](https://www.redhat.com/en) where I explore
