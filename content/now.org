@@ -1,0 +1,27 @@
+---
+title: "what I'm doing now"
+date: "2024-05-22"
+---
+
+* Netlink and YNL
+
+I am officially now a maintainer of the [[https://docs.kernel.org/userspace-api/netlink/intro-specs.html#ynl-lib][YNL library]] and [[https://docs.kernel.org/networking/netlink_spec/index.html][Netlink specifications]] that live in the
+Linux kernel git repository.
+
+#+attr_html: :style margin-left: 10em; margin-right: 10em;
+#+begin_example
+YAML NETLINK (YNL)
+M:     Donald Hunter <donald.hunter@gmail.com>
+M:     Jakub Kicinski <kuba@kernel.org>
+F:     Documentation/netlink/
+F:     Documentation/userspace-api/netlink/intro-specs.rst
+F:     Documentation/userspace-api/netlink/specs.rst
+F:     tools/net/ynl/
+#+end_example
+
+* Zero Trust
+
+Having spent the last 20+ years focused on networking technologies, I am now enjoying a bit of a
+pivot to Zero Trust architectures. Sure, there's still a lot of networking in Zero Trust, but
+there's also some interesting new problems related to identity and attestation as well as the
+need for compliance auditing and maturity assessment.
