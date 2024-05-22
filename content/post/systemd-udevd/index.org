@@ -1,0 +1,174 @@
+---
+title: "systemd ate my cat! 🙀"
+date: 2023-11-09T22:30:00Z
+tags:
+  - linux
+  - systemd
+categories:
+  - code
+---
+
+A Unicode text adventure in the land of Linux interface names where we cast ~systemd~ as the villain.
+
+<!--more-->
+
+The Linux kernel takes a laissez-faire attitude to [[https://github.com/torvalds/linux/blob/a12deb44f9734dc25970c266249b272e44d3d1b5/net/core/dev.c#L1038-L1054][interface naming]], letting almost any
+character be used and only disallowing directory names, space, ~/~ and ~:~. I should be
+able to sneak some Unicode characters in there, right? So I thought it would be nice to give my
+interfaces colourful happy names to brighten my day.
+
+#+begin_src sh :results output
+ip link add 😻 type bridge
+#+end_src
+
+Unfortunately ~systemd~ had other ideas. The kernel delegates device naming to user space which
+means that ~systemd~ or, more accurately, ~systemd-udevd~ gets involved.
+
+#+begin_src sh :results output
+ip link show type bridge
+5: ____: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+    link/ether 06:bf:1c:90:66:35 brd ff:ff:ff:ff:ff:ff
+#+end_src
+
+It turns out that ~systemd-udevd~ takes a quite authoritarian attitude to interface naming. As I
+write this, on Fedora 39, ~systemd-udevd~ is enforcing ~v253~ of its [[https://www.freedesktop.org/software/systemd/man/254/systemd.net-naming-scheme.html][naming commandments]] while
+also applying a few thousand lines of udev rules.
+
+Back in the pre ~v249~ days, ~systemd-udevd~ only outlawed ~/~ characters in interface names and
+translated them into ~_~ characters. Since then, with the advent of [[https://github.com/systemd/systemd/blob/893028523469b3ec459388428ddc466942cdaf4d/src/shared/netif-naming-scheme.h#L23-L67][NAMING_REPLACE_STRICTLY]],
+only ASCII characters between 32 and 127 are now deemed acceptable. The strategy is still to
+translate disallowed characters into ~_~, foreshadowing a ~systemd~ pratfall.
+
+The [[https://www.man7.org/linux/man-pages/man7/udev.7.html][udev(7)]] manual page and the code in [[https://github.com/systemd/systemd/blob/b6be6a6721e3d7ba0f01cfba135d2d6cf526087b/src/udev/udev-rules.c#L2601-L2610][src/udev/udev-rules.c]] suggest that I could override the
+~v253~ enforcement policy with a rule that says ~OPTIONS+="string_escape=none"~. I tried this
+with the following rule, but it didn't have any effect.
+
+#+begin_src sh :results output
+# /etc/udev/rules.d/01-raw-names.rules
+SUBSYSTEM=="net", OPTIONS+="string_escape=none"
+#+end_src
+
+I can verify that my rule does run, with a systemtap probe on the ~rules_apply_line~ tracepoint
+in ~systemd-udevd~ – which is actually a symlink to ~/usr/bin/udevadm~:
+
+#+begin_src C
+probe process("/usr/bin/udevadm").mark("rules_apply_line")
+{
+        printf("udev evaluating file=%s line=%d\n", user_string($arg5), $arg6);
+}
+#+end_src
+
+#+begin_src sh :results output
+stap udev-rules.stp
+
+udev evaluating file=/usr/lib/udev/rules.d/01-md-raid-creating.rules line=7
+udev evaluating file=/etc/udev/rules.d/01-raw-names.rules line=1
+udev evaluating file=/usr/lib/udev/rules.d/10-dm.rules line=31
+...
+#+end_src
+
+The [[https://www.man7.org/linux/man-pages/man7/udev.7.html][udev(7)]] manual page also tells us that net udev event processing can be debugged with the
+following rule:
+
+#+begin_src sh :results output
+# /etc/udev/rules.d/00-debug-net.rules
+SUBSYSTEM=="net", OPTIONS="log_level=debug"
+#+end_src
+
+Now we can see what happens from the journal output:
+
+#+begin_src sh :results output
+(udev-worker)[3134]: 🐈: The log level is changed to 'debug' while processing device (SEQNUM=4567, ACTION=add)
+(udev-worker)[3134]: 🐈: /usr/lib/udev/rules.d/75-net-description.rules:6 Importing properties from results of builtin command 'net_id'
+(udev-worker)[3134]: 🐈: addr_assign_type=1, MAC address is not permanent.
+(udev-worker)[3134]: 🐈: sd_device_get_parent() failed: No such file or directory
+(udev-worker)[3134]: 🐈: sd_device_get_parent() failed: No such file or directory
+(udev-worker)[3134]: 🐈: sd_device_get_parent() failed: No such file or directory
+(udev-worker)[3134]: 🐈: sd_device_get_parent_with_subsystem_devtype() failed: No such file or directory
+(udev-worker)[3134]: 🐈: /usr/lib/udev/rules.d/80-net-setup-link.rules:5 Importing properties from results of builtin command 'path_id'
+(udev-worker)[3134]: 🐈: /usr/lib/udev/rules.d/80-net-setup-link.rules:5 Failed to run builtin 'path_id': No such file or directory
+(udev-worker)[3134]: 🐈: /usr/lib/udev/rules.d/80-net-setup-link.rules:9 Importing properties from results of builtin command 'net_setup_link'
+(udev-worker)[3134]: 🐈: Device has name_assign_type=3
+(udev-worker)[3134]: 🐈: Device has addr_assign_type=1
+NetworkManager[1300]: <info>  [1699542979.3467] manager: (🐈): new Bridge device (/org/freedesktop/NetworkManager/Devices/16)
+(udev-worker)[3134]: 🐈: Config file /usr/lib/systemd/network/98-default-mac-none.link is applied
+(udev-worker)[3134]: 🐈: Using static MAC address.
+(udev-worker)[3134]: 🐈: Policy *keep*: keeping existing userspace name
+(udev-worker)[3134]: 🐈: /usr/lib/udev/rules.d/80-net-setup-link.rules:11 Replaced 4 character(s) from result of NAME="$env{ID_NET_NAME}"
+(udev-worker)[3134]: 🐈: /usr/lib/udev/rules.d/80-net-setup-link.rules:11 NAME '____'
+(udev-worker)[3134]: 🐈: /usr/lib/udev/rules.d/99-systemd.rules:68 RUN '/usr/lib/systemd/systemd-sysctl --prefix=/net/ipv4/conf/$name --prefix=/net/ipv4/neigh/$name --prefix=/net/ipv6/conf/$nam>
+(udev-worker)[3134]: 🐈: sd-device: Created db file '/run/udev/data/n15' for '/devices/virtual/net/🐈'
+kernel: ____: renamed from 🐈
+(udev-worker)[3134]: ____: Network interface 15 is renamed from '🐈' to '____'
+NetworkManager[1300]: <info>  [1699542979.3595] device (🐈): interface index 15 renamed iface from '🐈' to '____'
+#+end_src
+
+This lets us see that it is line ~#11~ of ~/usr/lib/udev/rules.d/80-net-setup-link.rules~ that
+triggers the rename.
+
+#+begin_src sh :results output
+NAME=="", ENV{ID_NET_NAME}!="", NAME="$env{ID_NET_NAME}"
+#+end_src
+
+The guard at the start of the line makes me think that I should be able to set ~NAME~ in my own
+rule and then this line won't get executed. In order to find out what field contains the
+original interface name, I can inspect the originating kernel udev message by running ~udevadm
+monitor -p~:
+
+#+begin_src sh :results output
+KERNEL[5671.341572] add      /devices/virtual/net/🐈 (net)
+ACTION=add
+DEVPATH=/devices/virtual/net/🐈
+SUBSYSTEM=net
+DEVTYPE=bridge
+INTERFACE=🐈
+IFINDEX=15
+SEQNUM=4567
+#+end_src
+
+I updated my rule to pre-emptively set ~NAME~ /with/ ~string_escape=none~ in the same rule:
+
+#+begin_src sh :results output
+# /etc/udev/rules.d/01-raw-names.rules
+SUBSYSTEM=="net", ACTION=="add", OPTIONS+="string_escape=none", NAME="$env{INTERFACE}"
+#+end_src
+
+#+begin_src sh :results output
+ip link add 😺 type bridge
+donaldh@tosh ~ $ ip link show type bridge
+19: 🐈: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+    link/ether 76:aa:f8:c4:87:b0 brd ff:ff:ff:ff:ff:ff
+20: 😺: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+    link/ether 12:66:dd:ec:0f:b8 brd ff:ff:ff:ff:ff:ff
+#+end_src
+
+Happy days! 😼
+
+If that hadn't worked, my last resort would have been to use a more blunt tool and roll
+back time, so to speak. I could tell ~systemd-udevd~ to use an older naming policy by adding a
+~net.naming-scheme~ kernel boot option:
+
+#+begin_src sh :results output
+options root=/dev/mapper/fedora-root ro rd.lvm.lv=fedora/root net.naming-scheme=v247
+#+end_src
+
+Something that I noted along the way – it's not ideal that the kernel accepts some control
+characters in interface names, e.g. ~\b~:
+
+#+begin_src sh :results output
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+16: 🐈: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+    link/ether 12:7c:de:eb:0c:66 brd ff:ff:ff:ff:ff:ff
+: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+    link/ether 8e:c3:b4:53:28:86 brd ff:ff:ff:ff:ff:ff
+: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+    link/ether 4e:bb:67:1d:64:11 brd ff:ff:ff:ff:ff:ff
+#+end_src
+
+Also of note is that ~systemd-udevd~ doesn't handle self-generated name collisions at all.
+Before I added my custom rule, if I repeated the request to create 😻 then ~systemd-udevd~ again
+tried to rename it to ~____~ which already existed. The rename would fail and ~systemd-udevd~
+would just give up. Pretty wild huh?
+
+If you want to learn more about ~systemd~ then the [[https://www.freedesktop.org/software/systemd/man/latest/][manpages]] have got you covered.
