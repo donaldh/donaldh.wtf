@@ -35,3 +35,13 @@ menu:
       url: categories
       weight: 1
 paginate: 20
+module:
+  mounts:
+    - source: content
+      target: content
+    - source: ../advent-of-code/2020
+      target: content/post/advent/2020
+    - source: ../advent-of-code/2022
+      target: content/post/advent/2022
+    - source: ../advent-of-code/2023
+      target: content/post/advent/2023
