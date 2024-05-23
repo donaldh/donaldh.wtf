@@ -1,0 +1,89 @@
+---
+title: "Blog Housekeeping"
+date: 2024-05-23T09:00:00+01:00
+tags:
+  - hugo
+  - literate
+  - org
+  - raku
+categories:
+  - code
+comments: true
+---
+
+# summary text
+
+Finally, finally getting around to some essential housekeeping of my literate blogging tools.
+
+<!--more-->
+
+My blogging platform consists of Emacs [[https://orgmode.org][org-mode]], [[https://gohugo.io][Hugo]] and a theme that started out as [[https://themes.gohugo.io/themes/beautifulhugo/][Beautiful
+Hugo]]. I first set up and started using this tool chain in 2018 and, while I have migrated to
+newer versions of Hugo, I haven't really done much maintenance along the way.
+
+#+attr_html: :class r-margin
+
+chroma: fix a bug in the raku lexer\\
+go-org: honour noweb parameters
+
+Hugo has dependencies on ~go-org~ and ~chroma~ and I rely on both of them for literate blogging
+using Emacs org-mode. I have been carrying a couple of patches for these dependencies in my
+private forks because I have been too lazy to push them upstream. The theme also uses features
+that have been deprecated so some theme maintenance is overdue.
+
+My blog was also relying on symlinks to pull in content from my [[https://adventofcode.com][AoC]] [[https://github.com/donaldh/advent-of-code/][repo]] and the latest Hugo no
+longer supports that. I need to migrate to using Hugo's overlay mounts module.
+
+Taking stock of what needs addressed, I came up with this to-do list:
+
++ Push go-org and chroma patches upstream
++ Migrate to latest ~hugo~ with updated dependencies
++ Clean up warnings in my theme
++ Upgrade fontawesome to get newer icons
++ Add a mastodon social media link
+
+** The Patch PRs
+
++ https://github.com/alecthomas/chroma/pull/966
+
++ https://github.com/niklasfasching/go-org/pull/114
+
+** Updating Hugo
+
+I am upgrading Hugo to the latest version in git which is roughly ~v0.126.1~, with local
+replacements for ~chroma~ and ~go-org~. With symlinks no longer supported, this configuration is
+neeeded to add my advent of code content from a sibling repository.
+
+#+begin_example
+module:
+  mounts:
+    - source: content
+      target: content
+    - source: ../advent-of-code/2020
+      target: content/post/advent/2020
+    - source: ../advent-of-code/2022
+      target: content/post/advent/2022
+    - source: ../advent-of-code/2023
+      target: content/post/advent/2023
+#+end_example
+
+** Cleaning up the Theme
+
+The theme originated from Beautiful Hugo, but there has been a steady stream of tweaks over the
+years. More recently I have been hacking a few things out of it and adding slightly bigger
+enhancements. I'd say it's now diverged enough that I don't want to rebase it onto the most
+recent version of Beautiful Hugo.
+
+There are some deprecated properties which has resulted in several minor updates across the
+whole theme. The most significant of these was migrating ~author~ settings to ~params.author~.
+
+** Font Awesome and Mastodon
+
+I want to add a mastodon social media link but the icon is missing from ~fontawesome 4.x~. That
+requires an update to a more recent ~fontawesome~ version. Sadly the project seems to be pushing
+anti-patterns to try and encourage conversions to Pro accounts. The 'kit embed codes' seem to be
+about tracking and monthly usage caps and I can't be having that crap. Thankfully there's still
+a *download* option so I can add the resources to the project instead of using a CDN.
+
+With ~fontawesome~ upgraded to version ~6.x~ I was able to add a shiny new mastodon link, which
+you can find in the footer below.
