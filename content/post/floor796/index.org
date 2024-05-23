@@ -1,0 +1,28 @@
+---
+title: "Floor796"
+date: 2024-05-22T20:22:04+01:00
+tags:
+  - nerdism
+categories:
+  - interwebs
+---
+
+# summary text
+
+My new favourite thing on the interwebs.
+
+<!--more-->
+
+# content
+
+[[https://floor796.com/]]
+
+So many pop-cultural references. From the website:
+
+#+begin_quote
+Floor796 is an ever-expanding animation scene showing the life of the 796th floor of the huge
+space station! The goal of the project is to create as huge animation as possible, with many
+references to movies, games, anime and memes.
+#+end_quote
+
+[[file:floor796.jpg]]
