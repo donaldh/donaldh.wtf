@@ -2,7 +2,7 @@ HUGO ?= ~/git/hugo/hugo
 ARGS ?= --bind 0.0.0.0
 
 draft:	## Serve including draft posts
-	$(HUGO) serve $(ARGS) -D
+	$(HUGO) serve $(ARGS) -D -F
 
 serve:	## Serve
 	$(HUGO) serve $(ARGS)
