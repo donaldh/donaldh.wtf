@@ -1,0 +1,26 @@
+---
+title: "What I'm doing now"
+date: 2024-05-23T10:28:15+01:00
+tags:
+  - now
+categories:
+  - life
+comments: true
+---
+
+# summary text
+
+Inspired to add a "now" page to my site.
+
+<!--more-->
+
+# content
+
+I have recently seen a few [[https://nownownow.com/about]["now"]] pages on people's websites and felt inspired to add one [[/now][here]].
+The thing about a "now" page is that it needs to be maintained, so I'm hoping that it will be a
+kind of [[https://en.wikipedia.org/wiki/Forcing_function][forcing function]] for me to update my site more frequently.
+
+My [[/about]["about"]] page serves as a /resume/ that spans many years. It picks out the skills and
+highlights of my professional career. That leaves plenty of room for the [[/now]["now"]] page to describe
+current interests and focus areas. I guess there might be a bit of overlap between individual
+blog posts and "now" content, whenever my interest spawn new posts or vice versa.
