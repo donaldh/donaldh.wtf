@@ -760,3 +760,60 @@ figcaption {
 pre {
     font-size: 12px;
 }
+
+/* Formatting for wide tables with rotated heading rows */
+
+table.hvert th:nth-child(n+2) em {
+    writing-mode: vertical-lr;
+    transform: rotate(180deg);
+    font-style: normal;
+}
+
+table.hvert th { vertical-align: bottom; }
+
+table.hvert tr {
+    background-color: rgba(210,210,210,0.2);
+}
+table.hvert { overflow: hidden; }
+table.hvert th:not(:first-child):hover,
+table.hvert td:not(:first-child):hover {
+    position: relative;
+}
+table.hvert th:not(:first-child):hover::after,
+table.hvert td:not(:first-child):hover::after {
+    content: '';
+    height: 6000px;
+    top: -3000px;
+    width: 100%;
+    left: 0;
+    position: absolute;
+    z-index: -1;
+    background-color: #ffb;
+}
+table.hvert tr:hover td {
+    background-color: #ffb;
+}
+
+table.shrink {
+    font-size: 70%;
+}
+
+table.shrink tr th {
+    padding: 4px 10px;
+}
+
+table.shrink tr td {
+    padding: 4px 10px;
+}
+
+table.shrinkmore {
+    font-size: 60%;
+}
+
+table.shrinkmore tr th {
+    padding: 2px 7px;
+}
+
+table.shrinkmore tr td {
+    padding: 2px 7px;
+}
