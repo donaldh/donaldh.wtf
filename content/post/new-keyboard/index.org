@@ -1,0 +1,78 @@
+---
+title: "A New Keyboard"
+date: 2024-07-17T18:40:11+01:00
+tags:
+  - nerdism
+categories:
+  - life
+---
+
+# summary text
+
+My new mechanical keyboard has arrived!
+
+<!--more-->
+
+# content
+
+[[file:box.jpg]]
+
+Since I got my first iMac over a decade ago I have been making do with Apple keyboards. I like
+the aesthetic but the typing experience has always been pretty awful. Recently I have been
+finding myself mistyping more frequently, especially with mis-hitting the spacebar.
+
+[[file:MQ052B.jpeg]]
+
+At the start of the year I decided it was time to go back to using a mechanical keyboard, but
+these days we are spoilt for choice and, unable to decide, I have been procrastinating ever
+since. I was very tempted by the [[https://www.zsa.io/moonlander][ZSA Moonlander]] but buying one in the UK is a bit fraught, /and/
+I decided I'd prefer a low profile keyboard after many years of Apple keyboards. After some
+research I stumbled on the [[https://josefadamcik.github.io/SofleKeyboard/build_guide_choc.html][Sofle Keyboard]] with low-profile choc keys and got really close to
+hitting the "buy" button.
+
+But I got nervous about having to learn to type again and got especially worried about adapting
+to layers and [[https://precondition.github.io/home-row-mods][home row mods]]. After a bit of deliberation I realised that I quite like having all
+the symbol and modifer keys directly accessible so I went hunting for something a bit less
+ambitious:
+
++ Familiar / easy to learn
++ Mechanical
++ Low profile
++ Programmable (preferably QMK)
++ 75% (tenkeyless)
++ Split (if possible)
++ Ortholinear (maybe)
+
+It turns out that it's hard to get a keyboard that delivers all the items on this list. If you
+go for ortholinear or true split then it's not going to be easy to learn and the typical layouts
+have significantly fewer keys than a 75% layout. I eventually settled on the [[https://www.keychron.com/products/keychron-k15-pro-alice-layout-qmk-via-wireless-custom-mechanical-keyboard][Keychron K15 Pro]]
+which has a split "Alice" layout, runs the [[https://qmk.fm][QMK]] firmware and has all the Apple keys.
+
+So I ordered it last month and, after an interminable wait, my new keyboard finally arrived in
+the post today.
+
+[[file:irl-backlit.jpg]]
+
+This keyboard is only a couple of steps away from a standard layout so I feel confident that I won't
+end up struggling to adapt, or completely hating it.
+
++ All the mod and symbol keys are there.
++ It is a split layout, albeit still a single unit.
++ It's programmable so I can experiment with layers.
+
+First impressions are very encouraging. The split layout is a little bit unsettling but I have
+already started adapting to it after a short while. This is not an ISO layout so the ~~~ and ~\~
+keys will take a bit of getting used to. The keycaps and low profile switches have a fantasic
+feel and I am enjoying the split layout already after a few hours of use.
+
+The [[https://www.caniusevia.com/][VIA]] programming portal is such a breeze to use that I have already completed a few
+customisations:
+
++ I reorderd the ~home~, ~pgup~ and ~pgdn~ keys to be in a more natural order.
++ There's fewer navigation keys so I filled the gaps on another layer.
++ I put a numeric keypad on a layer, reusing 7, 8 and 9 and the alpha keys below.
++ My mouse only has a vertical scroll wheel so I have repurposed the rotary control for
+  a horizonal scroll wheel.
+
+There's plenty more to experiment with, though I am already wary of toggling different layers
+when there is no visual feedback about current keyboard state.

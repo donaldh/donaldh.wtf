@@ -3,6 +3,10 @@ title: "what I'm doing now"
 date: "2024-05-22"
 ---
 
+* This Week
+
+I am [[/2024/07/a-new-keyboard/][learning to type]] again.
+
 * Netlink and YNL
 
 I am officially now a maintainer of the [[https://docs.kernel.org/userspace-api/netlink/intro-specs.html#ynl-lib][YNL library]] and [[https://docs.kernel.org/networking/netlink_spec/index.html][Netlink specifications]] that live in the
