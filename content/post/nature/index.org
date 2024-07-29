@@ -1,0 +1,50 @@
+#+title: Nature
+#+date: 2024-07-28T23:00:00+01:00
+#+categories: photography
+#+tags: nature
+#+tags: diary
+
+A photo diary of nature winning.
+
+# more
+
+#+begin_export html
+<style>figcaption { margin-bottom: 2em; }</style>
+#+end_export
+
+** Trees
+
+#+caption: A pine sapling sprouting from the top of a fence post
+[[Pine-sapling-post.jpg]]
+
+#+caption: A tree that has taken over the fence post that it grew inside
+[[Tree-fencepost.jpg]]
+
+#+caption: This wrought iron fence was not enough to stop this tree
+[[Tree-fence.jpg]]
+
+#+caption: This branch didn't know where it was going; whatever got in the way didn't stop it
+[[Branch-twist.jpg]]
+
+** Spiders
+
+#+caption: A dew soaked spider's web between the bars of a rusty iron gate
+[[Web-gate.jpg]]
+
+** Shrooms
+
+#+caption: A cluster of mushrooms taking over from the grass
+[[Shrooms-grass.jpg]]
+
+#+caption: A moss covered tree stump makes a bountiful home for mushrooms
+[[Shrooms-log.jpg]]
+
+** Fruit
+
+#+caption: Berries ripening until they fall and start the cycle again
+[[Berries.jpg]]
+
+** Lost
+
+#+caption: An abandoned cuddly toy getting consumed by nature
+[[Overgrown-toy.jpg]]
