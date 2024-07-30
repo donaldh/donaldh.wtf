@@ -3,6 +3,7 @@ title: "A New Keyboard"
 date: 2024-07-17T18:40:11+01:00
 tags:
   - nerdism
+  - oss
 categories:
   - life
 ---
@@ -51,7 +52,7 @@ which has a split "Alice" layout, runs the [[https://qmk.fm][QMK]] firmware and 
 So I ordered it last month and, after an interminable wait, my new keyboard finally arrived in
 the post today.
 
-[[file:irl-backlit.jpg]]
+[[file:orig-layout.jpg]]
 
 This keyboard is only a couple of steps away from a standard layout so I feel confident that I won't
 end up struggling to adapt, or completely hating it.
@@ -73,6 +74,8 @@ customisations:
 + I put a numeric keypad on a layer, reusing 7, 8 and 9 and the alpha keys below.
 + My mouse only has a vertical scroll wheel so I have repurposed the rotary control for
   a horizonal scroll wheel.
+
+[[file:irl-backlit.jpg]]
 
 There's plenty more to experiment with, though I am already wary of toggling different layers
 when there is no visual feedback about current keyboard state.
