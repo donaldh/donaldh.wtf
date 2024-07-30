@@ -1,8 +1,8 @@
 #+title: Nature
 #+date: 2024-07-28T23:00:00+01:00
 #+categories: photography
-#+tags: nature
 #+tags: diary
+#+tags: nature
 
 A photo diary of nature winning.
 
