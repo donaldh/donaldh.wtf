@@ -1,0 +1,83 @@
+#+title: Keyboard Mods Redux
+#+date: 2024-08-16T18:53:14+01:00
+#+categories: life
+#+tags: nerdism
+#+tags: oss
+
+Adding an RGB layer to my QMK keyboard to declutter the fn layer.
+
+# more
+
+When I was working on my previous round of [[/2024/07/keyboard-week-two/][keyboard firmware modifications]], I mentioned that a
+followup activity would be decluttering the ~fn~ layer by moving the RGB controls to their own
+layer.
+
+Here we are. I have moved all the RGB controls to a new layer and added a layer toggle to
+~fn-r~, with ~Esc~ to return to the base layer.
+
+#+begin_export html
+<style>
+pre { white-space: pre; overflow: scroll; }
+pre code { white-space: revert; }
+</style>
+#+end_export
+
+#+begin_src diff
+         _______,    _______,  BT_HST1,  BT_HST2,  BT_HST3,  _______,  _______,   _______,  KC_P7,    KC_P8,    KC_P9,    _______,  _______,  _______,  _______,            KC_END,
+-        _______,    RGB_TOG,  RGB_MOD,  RGB_VAI,  RGB_HUI,  RGB_SAI,  RGB_SPI,   _______,  KC_P4,    KC_P5,    KC_P6,    _______,  _______,  _______,  _______,            _______,
+-        _______,    _______,  RGB_RMOD, RGB_VAD,  RGB_HUD,  RGB_SAD,  RGB_SPD,   _______,  KC_P1,    KC_P2,    KC_P3,    _______,  _______,            _______,            _______,
++        _______,    RGB_TOG,  _______,  _______,  _______,TO(MAC_RGB),_______,   _______,  KC_P4,    KC_P5,    KC_P6,    _______,  _______,  _______,  _______,            _______,
++        _______,    _______,  _______,  _______,  _______,  _______,  _______,   _______,  KC_P1,    KC_P2,    KC_P3,    _______,  _______,            _______,            _______,
+         _______,    _______,            _______,  _______,  _______,  _______,   BAT_LVL,  _______,  _______,  KC_P0,    _______,  _______,  _______,  _______,  _______,
+         _______,    _______,  _______,            _______,  _______,  _______,             _______,            _______,            _______,            _______,  _______,  _______),
+ 
+@@ -57,6 +58,15 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
+         _______,    _______,  _______,            _______,  _______,  _______,             _______,            _______,            _______,             _______,  _______,  _______),
++
++    [MAC_RGB] = LAYOUT_90_ansi(
++        _______,TO(MAC_BASE), _______,  _______,  _______,  _______,  _______,   _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,
++        _______,    _______,  _______,  _______,  _______,  _______,  _______,   _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,
++        _______,    RGB_TOG,  RGB_MOD,  RGB_VAI,  RGB_HUI,  RGB_SAI,  RGB_SPI,   _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,            _______,
++        _______,    _______,  RGB_RMOD, RGB_VAD,  RGB_HUD,  RGB_SAD,  RGB_SPD,   _______,  _______,  _______,  _______,  _______,  _______,            _______,            _______,
++        _______,    _______,            _______,  _______,  _______,  _______,   _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,
++        _______,    _______,  _______,            _______,  _______,  _______,             _______,            _______,            _______,            _______,  _______,  _______),
+#+end_src
+
+I chose to illuminate the RGB layer keys with a red backlight, but let the current RGB backlight
+theme show through to get visual feedback when using the RGB keys.
+
+#+begin_src diff
+                 if (index >= led_min && index < led_max && index != NO_LED) {
+ 			if (keymap_key_to_keycode(layer, (keypos_t){col,row}) > KC_TRNS) {
+-				rgb_matrix_set_color(index, RGB_GREEN);
+-			} else {
++				switch (layer) {
++				case MAC_FN:
++					rgb_matrix_set_color(index, RGB_GREEN);
++					break;
++				case MAC_RGB:
++					rgb_matrix_set_color(index, RGB_RED);
++					break;
++				default:
++					rgb_matrix_set_color(index, RGB_BLUE);
++				}
++			} else if (layer != MAC_RGB) {
+ 				rgb_matrix_set_color(index, RGB_BLACK);
+ 			}
+ 		}
+#+end_src
+
+Here is the resulting ~fn~ layer. I have liberated most of the left hand side of the keyboard,
+with only ~fn-r~ used for navigating to the new layer:
+
+[[file:fn-layer.jpg]]
+
+And here's the new RGB layer. The visual feedback is essential to know what state the keyboard
+is in:
+
+[[file:rgb-layer.jpg]]
+
+That's a wrap for this installment of keyboard firmware hacking. I have been pleasantly
+surprised by how easy it is to write a multi-layer keymap in QMK. The RGB backlighting doesn't
+have the same declarative control but the logic is straightforward enough.
+
