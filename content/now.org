@@ -1,11 +1,21 @@
----
-title: "what I'm doing now"
-date: "2024-05-22"
----
+#+title: what I'm doing now
+#+date: 2024-08-28
 
 * This Week
 
-I am [[/2024/07/a-new-keyboard/][learning to type]] again.
+I spent some time avoiding Emacs package bankruptcy. A recent package install broke [[https://magit.vc][Magit]] so I
+decided it was time to update all installed packages and prune out all the things I no longer
+use.
+
+I also turned on ~which-key-mode~ to help discoverability. I've been using Emacs for decades but
+there is plenty I have not learned about yet. The gem I learned this week is the ~C-x 8 e~ emoji
+keymap.
+
+* Meanwhile
+
+I am [[/2024/07/a-new-keyboard/][learning to type]] again. And flashing custom firmware to my keyboard.
+
+I was very fortunate to [[https://flic.kr/s/aHBqjBDJ6F][see the aurora]] from my garden on Monday 12 Aug.
 
 * Netlink and YNL
 
