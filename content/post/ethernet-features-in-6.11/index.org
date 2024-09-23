@@ -1,8 +1,7 @@
 #+title: Ethernet Driver Features in 6.11
-#+date: 2024-08-16T19:47:36+01:00
+#+date: 2024-09-23T10:00:00+01:00
 #+categories: linux
 #+tags[]: kernel
-#+draft: true
 #+layout: wide
 
 A report of features and offloads implemented by ethernet drivers in Linux kernel 6.11.
@@ -422,5 +421,3 @@ Finally, the /mega/ table of netdev features.
 | wiznet/w5300               |      |           |           |             |           |            |                   |                   |                       | X                 |       |        |               |       |       |       |           |                |        |       |           |                |              |              |                  |                       |               |           |              |            |            |            |          |          |          |            |         |         |                   |                   |                       |                    |         |          |                  |                      |             |             |          |                 |             |
 | xilinx/ll_temac_main       | X    | X         | X         | X           | X         |            | X                 | X                 | X                     | X                 | X     |        |               |       | X     |       |           |                |        |       |           |                |              |              |                  |                       |               |           |              |            |            |            |          |          |          |            |         |         |                   |                   |                       |                    |         |          |                  |                      |             |             |          |                 |             |
 | xilinx/xilinx_axienet_main | X    | X         |           |             |           |            |                   |                   |                       |                   |       |        |               |       |       |       |           |                |        |       |           |                |              |              |                  |                       |               |           |              |            |            |            |          |          |          |            |         |         |                   |                   |                       |                    |         |          |                  |                      |             |             |          |                 |             |
-
-
