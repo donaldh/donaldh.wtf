@@ -152,7 +152,7 @@ These are the scoring rules for the game:
 my @words = '/usr/share/dict/words'.IO.lines>>.lc;
 
 sub MAIN(Str $chars, Str $centre, :$summary) {
-    my @allowed = $chars.comb;
+    my $allowed = $chars.comb.Set;
 
     my $final-score = 0;
     my $found-words = 0;
@@ -160,12 +160,14 @@ sub MAIN(Str $chars, Str $centre, :$summary) {
 
     for @words -> $word {
         my @chars = $word.comb;
+        my $charset = @chars.Set;
+
         if +@chars >= 4 &&          # Is at least 4 chars
-        $centre (elem) @chars &&    # Contains the center char (element of set)
-        @chars (<=) @allowed {      # All chars are allowed (is a subset)
+        $centre (elem) $charset &&  # Contains the center char (element of set)
+        $charset (<=) $allowed {    # All chars are allowed (is a subset)
 
             my $word-score = +@chars == 4 ?? 1 !! +@chars;
-            my $remainder = @allowed (-) @chars;
+            my $remainder = $allowed (-) $charset;
             unless +$remainder {
                 $word-score += 7;
                 $bonus-words++;
@@ -182,134 +184,47 @@ sub MAIN(Str $chars, Str $centre, :$summary) {
     say '';
     say "Found {$found-words} words from candidate characters {$chars.subst($centre, "[$centre]")}.";
     say "This spelling bee gets {$final-score} points, with {$bonus-words} bonus words.";
+    say "Took " ~ (now - ENTER now).base(10, 2) ~ "s";
 }
 #+END_SRC
 
 #+begin_src sh :results output
-./bee.raku mciplot t
+./bee.raku --summary mciplot t
 #+end_src
 
 #+RESULTS:
-#+begin_example
-          clipt =  5    unused m o
-           clit =  1    unused o p m
-          cloit =  5    unused p m
-          cloot =  5    unused i m p
-           clot =  1    unused p m i
-        colitic =  7    unused p m
-           colt =  1    unused i m p
-           colt =  1    unused p i m
-         commit =  6    unused l p
-         commot =  6    unused i l p
-        complot =  7    unused i
-           coot =  1    unused m i l p
-        copilot =  7    unused m
-           copt =  1    unused i m l
-         coptic =  6    unused m l
-           coto =  1    unused l p m i
-          ictic =  5    unused l o m p
-        illicit =  7    unused m p o
-           ilot =  1    unused c p m
-          immit =  5    unused o l p c
-       implicit =  8    unused o
-      impolitic = 16    pangram
-          impot =  5    unused l c
-           itmo =  1    unused l c p
-          licit =  5    unused o m p
-           lilt =  1    unused c o p m
-          limit =  5    unused p c o
-           loot =  1    unused c i p m
-          lotic =  5    unused m p
-          lotto =  5    unused m c i p
-     miliolitic = 10    unused p
-           milt =  1    unused p c o
-        mitotic =  7    unused l p
-           mitt =  1    unused l c p o
-           moit =  1    unused l p c
-           molt =  1    unused i p c
-           moot =  1    unused l p i c
-         motmot =  6    unused i c p l
-           mott =  1    unused c i p l
-           mott =  1    unused p c l i
-          motto =  5    unused l i p c
-   occipitootic = 12    unused m l
-       ocotillo =  8    unused m p
-          octic =  5    unused l p m
-         octoic =  6    unused p m l
-         octopi =  6    unused l m
-           omit =  1    unused c l p
-        oolitic =  7    unused m p
-          optic =  5    unused m l
-           otic =  1    unused l m p
-         otitic =  6    unused m p l
-       otolitic =  8    unused p m
-          otomi =  5    unused l p c
-           otto =  1    unused m i l p c
-           otto =  1    unused p l c i m
-          picot =  5    unused m l
-           pict =  1    unused l m o
-           pict =  1    unused l o m
-          pilot =  5    unused c m
-          pilot =  5    unused c m
-          pipit =  5    unused m l o c
-         pitpit =  6    unused o l m c
-           plot =  1    unused c m i
-        politic =  7    unused m
-       politico =  8    unused m
-           polt =  1    unused c m i
-           poot =  1    unused i m l c
-          potoo =  5    unused l m i c
-           pott =  1    unused l i m c
-          potto =  5    unused i l m c
-         ptotic =  6    unused l m
-           till =  1    unused o m c p
-         tillot =  6    unused c p m
-           tilt =  1    unused c p o m
-           timo =  1    unused p l c
-         tipiti =  6    unused l m o c
-        tiptilt =  7    unused o m c
-         tiptop =  6    unused m l c
-           titi =  1    unused m p l o c
-           toco =  1    unused i m l p
-           toil =  1    unused p m c
-           toit =  1    unused m p l c
-           toll =  1    unused m p i c
-           tolt =  1    unused c p m i
-         tomtit =  6    unused c l p
-           tool =  1    unused p m c i
-           toom =  1    unused c p l i
-           toop =  1    unused c i m l
-           toot =  1    unused m c p l i
-           topi =  1    unused l c m
-          topic =  5    unused m l
-           topo =  1    unused i c m l
-           toto =  1    unused m p c i l
-
-Found 93 words from candidate characters mciplo[t].
-This spelling bee gets 353 points, with 1 bonus words.
-#+end_example
+: 
+: Found 93 words from candidate characters mciplo[t].
+: This spelling bee gets 353 points, with 1 bonus words.
+: Took 1.22s
 
 #+begin_src sh :results output
 ./bee.raku --summary rdighlo r
 #+end_src
 
 #+RESULTS:
+: 
 : Found 53 words from candidate characters [r]dighlo.
 : This spelling bee gets 158 points, with 1 bonus words.
+: Took 1.23s
 
 #+begin_src sh :results output
 ./bee.raku --summary yomahnr m
 #+end_src
 
 #+RESULTS:
+: 
 : Found 168 words from candidate characters yo[m]ahnr.
 : This spelling bee gets 687 points, with 1 bonus words.
+: Took 1.23s
 
 #+begin_src sh :results output
 ./bee.raku --summary hunotgd u
 #+end_src
 
 #+RESULTS:
+: 
 : Found 72 words from candidate characters h[u]notgd.
 : This spelling bee gets 308 points, with 2 bonus words.
+: Took 1.25s
 
