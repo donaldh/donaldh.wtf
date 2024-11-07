@@ -1,7 +1,13 @@
 #+title: what I'm doing now
-#+date: 2024-08-28
+#+date: 2024-11-02
 
 * This Week
+
+I am still [[/2024/07/a-new-keyboard/][learning to type]] again. It turns out that the switch from an ISO layout back to ANSI
+after 20 odd years is causing me grief. My newlines often get a ~\~ mixed in and tilde is 3 rows
+higher than expected.
+
+* Recently
 
 I spent some time avoiding Emacs package bankruptcy. A recent package install broke [[https://magit.vc][Magit]] so I
 decided it was time to update all installed packages and prune out all the things I no longer
@@ -10,28 +16,6 @@ use.
 I also turned on ~which-key-mode~ to help discoverability. I've been using Emacs for decades but
 there is plenty I have not learned about yet. The gem I learned this week is the ~C-x 8 e~ emoji
 keymap.
-
-* Meanwhile
-
-I am [[/2024/07/a-new-keyboard/][learning to type]] again. And flashing custom firmware to my keyboard.
-
-I was very fortunate to [[https://flic.kr/s/aHBqjBDJ6F][see the aurora]] from my garden on Monday 12 Aug.
-
-* Netlink and YNL
-
-I am officially now a maintainer of the [[https://docs.kernel.org/userspace-api/netlink/intro-specs.html#ynl-lib][YNL library]] and [[https://docs.kernel.org/networking/netlink_spec/index.html][Netlink specifications]] that live in the
-Linux kernel git repository.
-
-#+attr_html: :style margin-left: 10em; margin-right: 10em;
-#+begin_example
-YAML NETLINK (YNL)
-M:     Donald Hunter <donald.hunter@gmail.com>
-M:     Jakub Kicinski <kuba@kernel.org>
-F:     Documentation/netlink/
-F:     Documentation/userspace-api/netlink/intro-specs.rst
-F:     Documentation/userspace-api/netlink/specs.rst
-F:     tools/net/ynl/
-#+end_example
 
 * Zero Trust
 
