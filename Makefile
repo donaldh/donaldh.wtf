@@ -2,13 +2,13 @@ HUGO ?= ~/git/hugo/hugo
 ARGS ?= --bind 0.0.0.0 --baseURL "http://`hostname`:1313/"
 
 draft:	## Serve including draft posts
-	$(HUGO) serve $(ARGS) -D -F
+	HUGO_NUMWORKERMULTIPLIER=1 $(HUGO) serve $(ARGS) -D -F
 
 serve:	## Serve
-	$(HUGO) serve $(ARGS)
+	HUGO_NUMWORKERMULTIPLIER=1 $(HUGO) serve $(ARGS)
 
 publish:	## Publish site to hosting
-	$(HUGO)
+	HUGO_NUMWORKERMULTIPLIER=1 $(HUGO)
 	rsync -avz --delete public/ $(HOSTING):~/wtf
 
 help:	## This help
