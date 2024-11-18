@@ -1,5 +1,5 @@
 HUGO ?= ~/git/hugo/hugo
-ARGS ?= --bind 0.0.0.0
+ARGS ?= --bind 0.0.0.0 --baseURL "http://`hostname`:1313/"
 
 draft:	## Serve including draft posts
 	$(HUGO) serve $(ARGS) -D -F
