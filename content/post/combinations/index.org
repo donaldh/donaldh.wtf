@@ -49,22 +49,23 @@ Let's say we don't want to rely on the Array stringification and want to provide
 solution uses ~.rotor~ to wrap the output to a configurable width.
 
 #+begin_src raku :results output
-  sub number-combinations($m, $n, :$width = 96) {
-      my @combinations =
-          (1..$m).combinations($n)           # generate the combinations
-                 .map({ "[{.join: ','}]" }); # format each combination
+sub number-combinations($m, $n, :$width = 96) {
+    my @combinations =
+        (1..$m).combinations($n)           # generate the combinations
+               .map({ "[{.join: ','}]" }); # format each combination
 
-      my $per-line = $width div @combinations.map({ .chars + 2 }).max;
+    my $per-line = $width div @combinations.map({ .chars + 2 }).max;
 
-      ('[ ' ~
-          @combinations
-               .rotor($per-line, :partial)   # split into n per line
-               .map({ .join(', ') })         # join items on same line
-               .join(",\n  ")                # join the lines
-       ~ ' ]').say
-  }
+    ('[ ' ~
+        @combinations
+          .rotor($per-line, :partial)   # split into n per line
+          .map({ .join(', ') })         # join items on same line
+          .join(",\n  ")                # join the lines
+      ~ ' ]'
+    ).say
+}
 
-  number-combinations(8, 3)
+number-combinations(8, 3)
 #+end_src
 
 #+RESULTS:
@@ -111,28 +112,28 @@ say [X~] ( < d e f >, < g h i >, < j k l> )
 #+RESULTS:
 : (dgj dgk dgl dhj dhk dhl dij dik dil egj egk egl ehj ehk ehl eij eik eil fgj fgk fgl fhj fhk fhl fij fik fil)
 
-The complete soltion applies the ~[X~]~ cross product reduce operator to a slice of key presses,
-with some output formatting.
+The complete solution applies the ~[X~]~ cross product reduce operator to a slice of key
+presses, with some output formatting.
 
 #+begin_src raku :results output
-    sub phone-combinations(Str $digits) {
-        my %keys =
-            1 => < _ , @ >,   2 => < a b c >, 3 => < d e f >,
-            4 => < g h i >,   5 => < j k l >, 6 => < m n o >,
-            7 => < p q r s >, 8 => < t u v >, 9 => < w x y z >,
-            '*' => (' ',);
+sub phone-combinations(Str $digits) {
+    my %keys =
+        1 => < _ , @ >,   2 => < a b c >, 3 => < d e f >,
+        4 => < g h i >,   5 => < j k l >, 6 => < m n o >,
+        7 => < p q r s >, 8 => < t u v >, 9 => < w x y z >,
+        '*' => (' ',);
 
-        ('[' ~
-         (
-             [X~] %keys{ $digits.comb }
-         )
-         .map({ "\"{$_}\"" })
-         .rotor(10, :partial).map({ .join(', ') })
-         .join("\n ")
-         ~ ']').say
-    }
+    ('[' ~
+     (
+         [X~] %keys{ $digits.comb }
+     )
+     .map({ "\"{$_}\"" })
+     .rotor(10, :partial).map({ .join(', ') })
+     .join("\n ")
+     ~ ']').say
+}
 
-    phone-combinations '417'
+phone-combinations '417'
 #+end_src
 
 #+RESULTS:
@@ -140,3 +141,4 @@ with some output formatting.
 :  "g@r", "g@s", "h_p", "h_q", "h_r", "h_s", "h,p", "h,q", "h,r", "h,s"
 :  "h@p", "h@q", "h@r", "h@s", "i_p", "i_q", "i_r", "i_s", "i,p", "i,q"
 :  "i,r", "i,s", "i@p", "i@q", "i@r", "i@s"]
+
