@@ -1,7 +1,24 @@
 #+title: what I'm doing now
-#+date: 2024-11-02
+#+date: 2024-11-18
 
 * This Week
+
+[[https://lwn.net/Articles/998490/][Linux kernel 6.12]] was released this week and my small contribution to it means I have now made
+100 commits to the project:
+
+#+begin_example
+git shortlog -sne
+ 37947  Linus Torvalds <torvalds@linux-foundation.org>
+ 14544  David S. Miller <davem@davemloft.net>
+ 11265  Arnd Bergmann <arnd@arndb.de>
+  9304  Takashi Iwai <tiwai@suse.de>
+  8592  Christoph Hellwig <hch@lst.de>
+   ...
+   100  Donald Hunter <donald.hunter@gmail.com>
+   ...
+#+end_example
+
+I am also test driving [[https://github.com/dandavison/delta][git-delta]] for prettified side-by-side diffs on the git command line.
 
 I am still [[/2024/07/a-new-keyboard/][learning to type]] again. It turns out that the switch from an ISO layout back to ANSI
 after 20 odd years is causing me grief. My newlines often get a ~\~ mixed in and tilde is 3 rows
